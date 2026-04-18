@@ -21,7 +21,14 @@
       "Bash(cmd *)",
       "Bash(powershell *)",
       "Bash(eas --version)",
-      "Bash(eas whoami *)"
+      "Bash(eas whoami *)",
+      "Bash(xcrun simctl *)",
+      "Bash(open -a Simulator)",
+      "Bash(echo \"Expo started in background with PID $!\")",
+      "Bash(jobs -l)",
+      "Bash(chmod +x /Users/thesuryasimha/Projects/CareSignal/node_modules/.bin/expo)",
+      "Bash(node node_modules/typescript/bin/tsc --noEmit)",
+      "Bash(lsof -ti:8081)"
     ]
   }
 }

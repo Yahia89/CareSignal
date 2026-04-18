@@ -102,14 +102,15 @@ export interface Alert {
 
 export type AuthStackParamList = {
   Welcome: undefined;
-  SignIn: undefined;
+  SignIn: { role: 'elder' | 'family' };
+  SignUp: { role: 'elder' | 'family' };
   OTP: { phone: string };
   RoleSelect: undefined;
 };
 
-export type ElderTabParamList = {
+export type ElderStackParamList = {
   ElderHome: undefined;
-  ElderProfile: undefined;
+  ElderConfirmation: { status: CheckInStatus; firstName: string };
 };
 
 export type FamilyTabParamList = {

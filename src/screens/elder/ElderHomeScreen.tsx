@@ -1,24 +1,27 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Alert,
-  Animated,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { CheckInStatus, CheckInSlot } from '../../types';
-import { CheckInButton } from '../../components/elder/CheckInButton';
-import { AppCard } from '../../components/common/AppCard';
+import { ElderStackParamList, CheckInStatus, CheckInSlot } from '../../types';
 import { Colors, Radius, Spacing, Typography } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useCheckIn } from '../../hooks/useCheckIn';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
-import { SlotLabels } from '../../constants/config';
+
+type Props = NativeStackScreenProps<ElderStackParamList, 'ElderHome'>;
+
+type VoiceType = 'Warm Voice' | 'Calm Voice' | 'Bright Voice';
+type VitalType = 'Blood Sugar' | 'Blood Pressure';
+type InputMethod = 'Camera Capture' | 'Manual Entry';
 
 function getCurrentSlot(): CheckInSlot {
   const hour = new Date().getHours();
@@ -34,335 +37,584 @@ function getGreeting(): string {
   return 'Good Evening';
 }
 
-function formatDate(): string {
-  return new Date().toLocaleDateString([], {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-}
+export function ElderHomeScreen({ navigation }: Props): React.JSX.Element {
+  const { user, signOut } = useAuth();
+  const { isSubmitting, submitCheckIn } = useCheckIn();
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-}
-
-const STATUS_CHECK_IN_CONFIG: Record<CheckInStatus, {
-  label: string;
-  sublabel: string;
-  icon: string;
-  bg: string;
-  confirmTitle: string;
-  confirmMsg: string;
-}> = {
-  ok: {
-    label: "I'm OK",
-    sublabel: 'Everything is fine',
-    icon: 'checkmark-circle',
-    bg: Colors.success,
-    confirmTitle: 'Thank you!',
-    confirmMsg: 'Your family has been updated.',
-  },
-  help: {
-    label: 'I Need Help',
-    sublabel: 'I could use some assistance',
-    icon: 'warning',
-    bg: Colors.warning,
-    confirmTitle: 'Help is on the way',
-    confirmMsg: 'Your family has been notified.',
-  },
-  urgent: {
-    label: 'Urgent Help',
-    sublabel: 'I need immediate assistance',
-    icon: 'alert-circle',
-    bg: Colors.urgent,
-    confirmTitle: 'Alerting your family!',
-    confirmMsg: "We're alerting your family right away.",
-  },
-};
-
-export function ElderHomeScreen(): React.JSX.Element {
-  const { user } = useAuth();
-  const { todayCheckIn, isLoading, isSubmitting, submitCheckIn } = useCheckIn();
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [confirmedStatus, setConfirmedStatus] = useState<CheckInStatus>('ok');
-
-  const checkmarkScale = useRef(new Animated.Value(0)).current;
-  const confirmFade = useRef(new Animated.Value(0)).current;
+  const [voiceOn, setVoiceOn] = useState(true);
+  const [voiceType, setVoiceType] = useState<VoiceType>('Warm Voice');
+  const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
+  const [vitalType, setVitalType] = useState<VitalType>('Blood Sugar');
+  const [inputMethod, setInputMethod] = useState<InputMethod>('Camera Capture');
+  const [vitalValue, setVitalValue] = useState('');
 
   const firstName = user?.name.split(' ')[0] ?? 'there';
-  const currentSlot = getCurrentSlot();
-
-  const animateConfirmation = useCallback(() => {
-    checkmarkScale.setValue(0);
-    confirmFade.setValue(0);
-    Animated.parallel([
-      Animated.spring(checkmarkScale, {
-        toValue: 1,
-        useNativeDriver: true,
-        bounciness: 14,
-        speed: 10,
-      }),
-      Animated.timing(confirmFade, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [checkmarkScale, confirmFade]);
+  const userBadge = `${(user?.name ?? 'User').split(' ')[0].toLowerCase()} - Senior App`;
 
   const handleCheckIn = useCallback(
     async (status: CheckInStatus) => {
       try {
-        await submitCheckIn(status, currentSlot);
-        setConfirmedStatus(status);
-        setShowConfirmation(true);
-        animateConfirmation();
+        await submitCheckIn(status, getCurrentSlot());
+        navigation.replace('ElderConfirmation', { status, firstName });
       } catch (err) {
         Alert.alert('Error', (err as Error).message ?? 'Failed to submit check-in. Try again.');
       }
     },
-    [submitCheckIn, currentSlot, animateConfirmation],
+    [submitCheckIn, firstName, navigation],
   );
 
-  if (isLoading) {
-    return <LoadingOverlay message="Loading..." fullScreen={false} />;
+  if (isSubmitting) {
+    return <LoadingOverlay message="Sending check-in..." />;
   }
-
-  const cfg = STATUS_CHECK_IN_CONFIG[confirmedStatus];
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.greeting}>
-            {getGreeting()}, {firstName}! 👋
-          </Text>
-          <Text style={styles.date}>{formatDate()}</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.logoRow}>
+          <View style={styles.logoIcon}>
+            <Ionicons name="fitness-outline" size={16} color={Colors.primary} />
+          </View>
+          <View>
+            <Text style={styles.logoName}>MEDTECH CARE</Text>
+            <Text style={styles.logoSub}>CareSignal</Text>
+          </View>
         </View>
+        <View style={styles.headerRight}>
+          <View style={styles.userBadge}>
+            <Text style={styles.userBadgeText}>{userBadge}</Text>
+          </View>
+          <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
+            <Ionicons name="log-out-outline" size={16} color={Colors.textSecondary} />
+            <Text style={styles.logoutText}>Log Out</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
-        {todayCheckIn ? (
-          /* Already checked in today */
-          <AppCard style={styles.checkedInCard}>
-            <View style={styles.checkedInInner}>
-              <View style={[styles.bigCheckCircle, { backgroundColor: Colors.success }]}>
-                <Ionicons name="checkmark" size={48} color={Colors.textInverse} />
-              </View>
-              <Text style={styles.checkedInTitle}>You've checked in today</Text>
-              <Text style={styles.checkedInSlot}>
-                {SlotLabels[todayCheckIn.slot]} · {formatTime(todayCheckIn.timestamp)}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Greeting */}
+        <Text style={styles.checkInLabel}>Daily Check-In</Text>
+        <Text style={styles.greeting}>
+          {getGreeting()}, {firstName}
+        </Text>
+        <Text style={styles.questionText}>How are you today?</Text>
+
+        {/* Voice controls */}
+        <View style={styles.voiceRow}>
+          <View style={styles.voiceReadyRow}>
+            <View style={styles.voiceDot} />
+            <Text style={styles.voiceReadyText}>Voice assistant ready</Text>
+          </View>
+          <View style={styles.voiceControls}>
+            <TouchableOpacity
+              style={[styles.voiceOnBtn, !voiceOn && styles.voiceOffBtn]}
+              onPress={() => setVoiceOn((v) => !v)}
+            >
+              <Ionicons
+                name={voiceOn ? 'volume-high' : 'volume-mute'}
+                size={14}
+                color={Colors.textInverse}
+              />
+              <Text style={styles.voiceOnText}>
+                {voiceOn ? 'Voice On' : 'Voice Off'}
               </Text>
-              {todayCheckIn.status !== 'ok' && (
-                <View style={styles.statusNote}>
-                  <Ionicons
-                    name={todayCheckIn.status === 'urgent' ? 'alert-circle' : 'warning'}
-                    size={16}
-                    color={todayCheckIn.status === 'urgent' ? Colors.urgent : Colors.warning}
-                  />
-                  <Text style={styles.statusNoteText}>
-                    {todayCheckIn.status === 'urgent'
-                      ? 'Family was alerted for urgent help'
-                      : 'Family was notified you need help'}
-                  </Text>
+            </TouchableOpacity>
+
+            <View style={styles.voiceTypeWrap}>
+              <TouchableOpacity
+                style={styles.voiceTypePill}
+                onPress={() => setShowVoiceDropdown((v) => !v)}
+              >
+                <Text style={styles.voiceTypeText}>{voiceType}</Text>
+                <Ionicons name="chevron-down" size={14} color={Colors.primary} />
+              </TouchableOpacity>
+              {showVoiceDropdown && (
+                <View style={styles.voiceDropdown}>
+                  {(['Warm Voice', 'Calm Voice', 'Bright Voice'] as VoiceType[]).map((v) => (
+                    <TouchableOpacity
+                      key={v}
+                      style={styles.voiceDropdownItem}
+                      onPress={() => {
+                        setVoiceType(v);
+                        setShowVoiceDropdown(false);
+                      }}
+                    >
+                      {voiceType === v && (
+                        <Ionicons name="checkmark" size={14} color={Colors.primary} />
+                      )}
+                      <Text style={[styles.voiceDropdownText, voiceType === v && styles.voiceDropdownActive]}>
+                        {v}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               )}
             </View>
-          </AppCard>
-        ) : (
-          /* Check-in prompt */
-          <>
-            <AppCard style={styles.promptCard}>
-              <Text style={styles.promptTitle}>How are you today?</Text>
-              <Text style={styles.promptSubtitle}>
-                {SlotLabels[currentSlot]} check-in · Let your family know you're safe
-              </Text>
-            </AppCard>
-
-            <View style={styles.buttons}>
-              <CheckInButton
-                label="I'm OK"
-                sublabel="Everything is fine"
-                icon="checkmark-circle"
-                backgroundColor={Colors.success}
-                onPress={() => handleCheckIn('ok')}
-                disabled={isSubmitting}
-              />
-              <CheckInButton
-                label="I Need Help"
-                sublabel="I could use some assistance"
-                icon="warning"
-                backgroundColor={Colors.warning}
-                onPress={() => handleCheckIn('help')}
-                disabled={isSubmitting}
-              />
-              <CheckInButton
-                label="Urgent Help"
-                sublabel="I need immediate assistance"
-                icon="alert-circle"
-                backgroundColor={Colors.urgent}
-                onPress={() => handleCheckIn('urgent')}
-                disabled={isSubmitting}
-              />
-            </View>
-          </>
-        )}
-
-        {isSubmitting && <LoadingOverlay message="Sending check-in..." fullScreen={false} />}
-      </ScrollView>
-
-      {/* Confirmation Modal */}
-      <Modal
-        visible={showConfirmation}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowConfirmation(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Animated.View style={[styles.modalCard, { opacity: confirmFade }]}>
-            <Animated.View
-              style={[
-                styles.modalIcon,
-                { backgroundColor: `${cfg.bg}20`, transform: [{ scale: checkmarkScale }] },
-              ]}
-            >
-              <Ionicons name={cfg.icon as any} size={64} color={cfg.bg} />
-            </Animated.View>
-            <Text style={styles.modalTitle}>{cfg.confirmTitle}</Text>
-            <Text style={styles.modalName}>Thank you, {firstName}!</Text>
-            <Text style={styles.modalMsg}>{cfg.confirmMsg}</Text>
-            <TouchableOpacity
-              style={[styles.modalBtn, { backgroundColor: cfg.bg }]}
-              onPress={() => setShowConfirmation(false)}
-            >
-              <Text style={styles.modalBtnText}>Done</Text>
-            </TouchableOpacity>
-          </Animated.View>
+          </View>
         </View>
-      </Modal>
+
+        {/* Check-in buttons */}
+        <View style={styles.checkInButtons}>
+          <TouchableOpacity
+            style={[styles.checkInBtn, { backgroundColor: Colors.primary }]}
+            onPress={() => handleCheckIn('ok')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.checkInBtnLeft}>
+              <View style={styles.checkInIconWrap}>
+                <Ionicons name="checkmark-circle" size={26} color={Colors.textInverse} />
+              </View>
+              <View>
+                <Text style={styles.checkInBtnLabel}>I'm OK</Text>
+                <Text style={styles.checkInBtnSub}>Quick daily confirmation</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.checkInBtn, { backgroundColor: Colors.warning }]}
+            onPress={() => handleCheckIn('help')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.checkInBtnLeft}>
+              <View style={styles.checkInIconWrap}>
+                <Ionicons name="hand-left" size={26} color={Colors.textInverse} />
+              </View>
+              <View>
+                <Text style={styles.checkInBtnLabel}>I Need Help</Text>
+                <Text style={styles.checkInBtnSub}>Notify my support circle</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.checkInBtn, { backgroundColor: Colors.urgent }]}
+            onPress={() => handleCheckIn('urgent')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.checkInBtnLeft}>
+              <View style={styles.checkInIconWrap}>
+                <Ionicons name="alert-circle" size={26} color={Colors.textInverse} />
+              </View>
+              <View>
+                <Text style={styles.checkInBtnLabel}>Urgent Help</Text>
+                <Text style={styles.checkInBtnSub}>Escalate right away</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Optional Vital Capture */}
+        <View style={styles.vitalSection}>
+          <View style={styles.vitalHeader}>
+            <Text style={styles.vitalTitle}>Optional Vital Capture</Text>
+            <View style={styles.optionalBadge}>
+              <Text style={styles.optionalBadgeText}>Optional</Text>
+            </View>
+          </View>
+          <Text style={styles.vitalSubtitle}>Capture blood sugar or blood pressure</Text>
+
+          <View style={styles.vitalDropdowns}>
+            <TouchableOpacity style={styles.vitalDropdown}>
+              <Text style={styles.vitalDropdownLabel}>Vital Type</Text>
+              <View style={styles.vitalDropdownRow}>
+                <Text style={styles.vitalDropdownValue}>{vitalType}</Text>
+                <Ionicons name="chevron-down" size={14} color={Colors.textSecondary} />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.vitalDropdown}>
+              <Text style={styles.vitalDropdownLabel}>Input Method</Text>
+              <View style={styles.vitalDropdownRow}>
+                <Text style={styles.vitalDropdownValue} numberOfLines={1}>
+                  {inputMethod === 'Camera Capture' ? 'Camera Captu...' : 'Manual Entry'}
+                </Text>
+                <Ionicons name="chevron-down" size={14} color={Colors.textSecondary} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.vitalInputRow}>
+            <TextInput
+              style={styles.vitalInput}
+              placeholder={
+                vitalType === 'Blood Sugar'
+                  ? 'Use camera to capture blood sugar'
+                  : 'Use camera to capture blood pressure'
+              }
+              placeholderTextColor={Colors.textDisabled}
+              value={vitalValue}
+              onChangeText={setVitalValue}
+              keyboardType="numeric"
+              multiline
+            />
+            <TouchableOpacity style={styles.saveVitalBtn}>
+              <Text style={styles.saveVitalText}>Save{'\n'}Vital</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Footer links */}
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.footerLink}>
+            <Ionicons name="volume-high-outline" size={14} color={Colors.textSecondary} />
+            <Text style={styles.footerLinkText}>Replay Voice</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerLink}>
+            <Text style={styles.footerLinkTextTeal}>Family View</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  scroll: {
-    flexGrow: 1,
-    padding: Spacing.xl,
+  safe: { flex: 1, backgroundColor: Colors.card },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.card,
   },
-  header: { marginBottom: Spacing.xl },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoName: {
+    fontSize: 9,
+    fontWeight: Typography.fontWeightBold,
+    letterSpacing: 1.2,
+    color: Colors.primary,
+  },
+  logoSub: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  userBadge: {
+    backgroundColor: Colors.background,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  userBadgeText: {
+    fontSize: Typography.fontSizeXs,
+    color: Colors.textSecondary,
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.background,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  logoutText: {
+    fontSize: Typography.fontSizeXs,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeightSemiBold,
+  },
+
+  scroll: {
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxxl,
+  },
+
+  // Greeting
+  checkInLabel: {
+    fontSize: Typography.fontSizeSm,
+    color: Colors.primary,
+    fontWeight: Typography.fontWeightSemiBold,
+    marginBottom: Spacing.xs,
+  },
   greeting: {
     fontSize: Typography.fontSize2xl,
     fontWeight: Typography.fontWeightBold,
     color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
   },
-  date: {
+  questionText: {
     fontSize: Typography.fontSizeMd,
     color: Colors.textSecondary,
-    marginTop: 4,
-  },
-  promptCard: { marginBottom: Spacing.xl },
-  promptTitle: {
-    fontSize: Typography.fontSize2xl,
-    fontWeight: Typography.fontWeightBold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-  },
-  promptSubtitle: {
-    fontSize: Typography.fontSizeMd,
-    color: Colors.textSecondary,
-    lineHeight: Typography.fontSizeMd * 1.5,
-  },
-  buttons: { gap: 0 },
-  checkedInCard: { marginBottom: Spacing.xl },
-  checkedInInner: { alignItems: 'center', paddingVertical: Spacing.xl },
-  bigCheckCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: Spacing.lg,
   },
-  checkedInTitle: {
-    fontSize: Typography.fontSizeXl,
-    fontWeight: Typography.fontWeightBold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
+
+  // Voice controls
+  voiceRow: {
+    marginBottom: Spacing.xl,
   },
-  checkedInSlot: {
-    fontSize: Typography.fontSizeMd,
-    color: Colors.textSecondary,
-    marginTop: Spacing.sm,
-  },
-  statusNote: {
+  voiceReadyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
-    marginTop: Spacing.md,
-    backgroundColor: '#FFF3CD',
-    padding: Spacing.sm,
-    borderRadius: Radius.md,
+    marginBottom: Spacing.sm,
   },
-  statusNoteText: {
+  voiceDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.success,
+  },
+  voiceReadyText: {
+    fontSize: Typography.fontSizeXs,
+    color: Colors.textSecondary,
+  },
+  voiceControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  voiceOnBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.textPrimary,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+  },
+  voiceOffBtn: {
+    backgroundColor: Colors.textSecondary,
+  },
+  voiceOnText: {
+    fontSize: Typography.fontSizeXs,
+    fontWeight: Typography.fontWeightBold,
+    color: Colors.textInverse,
+  },
+  voiceTypeWrap: {
+    position: 'relative',
+  },
+  voiceTypePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: `${Colors.primary}15`,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: `${Colors.primary}30`,
+  },
+  voiceTypeText: {
+    fontSize: Typography.fontSizeXs,
+    fontWeight: Typography.fontWeightSemiBold,
+    color: Colors.primary,
+  },
+  voiceDropdown: {
+    position: 'absolute',
+    top: 36,
+    left: 0,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 8,
+    minWidth: 130,
+  },
+  voiceDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
+  voiceDropdownText: {
     fontSize: Typography.fontSizeSm,
     color: Colors.textPrimary,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: Colors.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl,
+  voiceDropdownActive: {
+    color: Colors.primary,
+    fontWeight: Typography.fontWeightSemiBold,
   },
-  modalCard: {
-    backgroundColor: Colors.card,
-    borderRadius: Radius.xxl,
-    padding: Spacing.xxxl,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 340,
-  },
-  modalIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
+
+  // Check-in buttons
+  checkInButtons: {
+    gap: Spacing.sm,
     marginBottom: Spacing.xl,
   },
-  modalTitle: {
-    fontSize: Typography.fontSize2xl,
-    fontWeight: Typography.fontWeightBold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  modalName: {
-    fontSize: Typography.fontSizeLg,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-    textAlign: 'center',
-  },
-  modalMsg: {
-    fontSize: Typography.fontSizeMd,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginTop: Spacing.md,
-    lineHeight: Typography.fontSizeMd * 1.5,
-    marginBottom: Spacing.xl,
-  },
-  modalBtn: {
-    paddingHorizontal: Spacing.xxxl,
-    paddingVertical: Spacing.md,
+  checkInBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderRadius: Radius.xl,
-    minWidth: 140,
-    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
   },
-  modalBtnText: {
+  checkInBtnLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  checkInIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkInBtnLabel: {
     fontSize: Typography.fontSizeLg,
     fontWeight: Typography.fontWeightBold,
     color: Colors.textInverse,
+  },
+  checkInBtnSub: {
+    fontSize: Typography.fontSizeXs,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+
+  // Vital capture
+  vitalSection: {
+    backgroundColor: Colors.background,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  vitalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xs,
+  },
+  vitalTitle: {
+    fontSize: Typography.fontSizeMd,
+    fontWeight: Typography.fontWeightSemiBold,
+    color: Colors.textPrimary,
+  },
+  optionalBadge: {
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  optionalBadgeText: {
+    fontSize: Typography.fontSizeXs,
+    color: Colors.primary,
+    fontWeight: Typography.fontWeightSemiBold,
+  },
+  vitalSubtitle: {
+    fontSize: Typography.fontSizeSm,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+  },
+  vitalDropdowns: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  vitalDropdown: {
+    flex: 1,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  vitalDropdownLabel: {
+    fontSize: Typography.fontSizeXs,
+    color: Colors.textDisabled,
+    marginBottom: 2,
+  },
+  vitalDropdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  vitalDropdownValue: {
+    fontSize: Typography.fontSizeSm,
+    color: Colors.textPrimary,
+    fontWeight: Typography.fontWeightSemiBold,
+    flex: 1,
+  },
+  vitalInputRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    alignItems: 'flex-start',
+  },
+  vitalInput: {
+    flex: 1,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: Typography.fontSizeSm,
+    color: Colors.textSecondary,
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
+  saveVitalBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.lg,
+    width: 64,
+    minHeight: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveVitalText: {
+    fontSize: Typography.fontSizeSm,
+    fontWeight: Typography.fontWeightBold,
+    color: Colors.textInverse,
+    textAlign: 'center',
+  },
+
+  // Footer
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: Spacing.sm,
+  },
+  footerLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  footerLinkText: {
+    fontSize: Typography.fontSizeSm,
+    color: Colors.textSecondary,
+  },
+  footerLinkTextTeal: {
+    fontSize: Typography.fontSizeSm,
+    color: Colors.primary,
+    fontWeight: Typography.fontWeightSemiBold,
   },
 });

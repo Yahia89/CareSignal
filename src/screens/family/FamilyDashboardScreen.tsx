@@ -45,27 +45,35 @@ export function FamilyDashboardScreen(): React.JSX.Element {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.appName}>CareSignal</Text>
-          {firstName ? (
-            <Text style={styles.welcomeText}>Hi, {firstName}</Text>
-          ) : null}
+        <View style={styles.logoRow}>
+          <View style={styles.logoIcon}>
+            <Ionicons name="fitness-outline" size={16} color={Colors.primary} />
+          </View>
+          <View>
+            <Text style={styles.logoName}>MEDTECH CARE</Text>
+            <Text style={styles.logoSub}>CareSignal</Text>
+          </View>
         </View>
-        <TouchableOpacity
-          style={styles.bellBtn}
-          onPress={() => {
-            // Navigate to alerts tab — handled via tab navigation
-          }}
-        >
-          <Ionicons name="notifications-outline" size={24} color={Colors.textPrimary} />
-          {unreadAlertCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {unreadAlertCount > 9 ? '9+' : unreadAlertCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <View style={styles.userBadge}>
+            <Text style={styles.userBadgeText}>
+              {firstName.toLowerCase()} - Family App
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.bellBtn}
+            onPress={() => {}}
+          >
+            <Ionicons name="notifications-outline" size={20} color={Colors.textSecondary} />
+            {unreadAlertCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadAlertCount > 9 ? '9+' : unreadAlertCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -108,33 +116,65 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     backgroundColor: Colors.card,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  appName: {
-    fontSize: Typography.fontSizeXl,
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoName: {
+    fontSize: 9,
     fontWeight: Typography.fontWeightBold,
+    letterSpacing: 1.2,
     color: Colors.primary,
   },
-  welcomeText: {
+  logoSub: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  userBadge: {
+    backgroundColor: Colors.background,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  userBadgeText: {
     fontSize: Typography.fontSizeXs,
     color: Colors.textSecondary,
-    marginTop: 2,
   },
   bellBtn: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   badge: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: 4,
+    right: 4,
     backgroundColor: Colors.urgent,
     borderRadius: 8,
     minWidth: 16,

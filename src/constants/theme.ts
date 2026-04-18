@@ -1,23 +1,24 @@
 // ─── Color Palette ────────────────────────────────────────────────────────────
 
 export const Colors = {
-  primary: '#2E86AB',
-  primaryLight: '#5BA8C4',
-  primaryDark: '#1E6080',
+  primary: '#2A6354',
+  primaryLight: '#3D8A73',
+  primaryDark: '#1A4237',
 
   success: '#27AE60',
   successLight: '#52C97A',
   successDark: '#1E8449',
 
-  warning: '#F39C12',
-  warningLight: '#F5B942',
-  warningDark: '#C27D0E',
+  warning: '#E8A020',
+  warningLight: '#F0B84A',
+  warningDark: '#B87810',
 
-  urgent: '#E74C3C',
-  urgentLight: '#EC7063',
-  urgentDark: '#B03A2E',
+  urgent: '#C83030',
+  urgentLight: '#E05050',
+  urgentDark: '#9A2020',
 
-  background: '#F0F4F8',
+  background: '#EBF6F1',
+  backgroundMint: '#C0E0D4',
   card: '#FFFFFF',
 
   textPrimary: '#1A1A2E',
@@ -26,9 +27,9 @@ export const Colors = {
   textInverse: '#FFFFFF',
 
   border: '#E5E7EB',
-  borderFocus: '#2E86AB',
+  borderFocus: '#2A6354',
 
-  late: '#F39C12',
+  late: '#E8A020',
   missed: '#6B7280',
   pending: '#9CA3AF',
 

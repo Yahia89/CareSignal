@@ -1,135 +1,133 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
-  Animated,
+  ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthStackParamList } from '../../types';
-import { AppButton } from '../../components/common/AppButton';
-import { Colors, Spacing, Typography } from '../../constants/theme';
+import { Colors, Radius, Spacing, Typography } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
+const SENIOR_FEATURES = [
+  "I'm OK / Need Help / Urgent Help",
+  'Voice prompts and replay support',
+  'Optional blood sugar and blood pressure capture',
+];
+
+const FAMILY_FEATURES = [
+  'Secure family-to-senior linking',
+  'Alert preferences by response level',
+  'Family control over senior-side vital capture',
+];
+
+function LogoBrand({ dark }: { dark?: boolean }): React.JSX.Element {
+  const color = dark ? Colors.textInverse : Colors.primary;
+  const subColor = dark ? 'rgba(255,255,255,0.7)' : Colors.textSecondary;
+  return (
+    <View style={styles.brandRow}>
+      <View style={[styles.brandIconBox, dark && styles.brandIconBoxDark]}>
+        <Ionicons name="fitness-outline" size={22} color={dark ? Colors.textInverse : Colors.primary} />
+      </View>
+      <View>
+        <Text style={[styles.brandName, { color }]}>MEDTECH CARE</Text>
+        <Text style={[styles.brandSub, { color: subColor }]}>CareSignal</Text>
+      </View>
+    </View>
+  );
+}
+
 export function WelcomeScreen({ navigation }: Props): React.JSX.Element {
   const { isLoading, loginAsElder, loginAsFamily } = useAuth();
 
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-
-  useEffect(() => {
-    // Fade in on mount
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Pulse animation for heart icon
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.18,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
-  }, [pulseAnim, fadeAnim, slideAnim]);
-
   return (
     <SafeAreaView style={styles.safe}>
-      <Animated.View
-        style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
-      >
-        {/* Logo Area */}
-        <View style={styles.logoSection}>
-          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="heart" size={52} color={Colors.urgent} />
-            </View>
-          </Animated.View>
-          <Text style={styles.appName}>CareSignal™</Text>
-          <Text style={styles.tagline}>Peace of Mind Between Visits</Text>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <LogoBrand />
         </View>
 
-        {/* Feature bullets */}
-        <View style={styles.features}>
-          {[
-            { icon: 'checkmark-circle', text: 'Daily safety check-ins for elders' },
-            { icon: 'notifications', text: 'Instant alerts for your family' },
-            { icon: 'shield-checkmark', text: 'Simple, trusted, private' },
-          ].map((f, i) => (
-            <View key={i} style={styles.featureRow}>
-              <Ionicons name={f.icon as any} size={20} color={Colors.primary} />
-              <Text style={styles.featureText}>{f.text}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* CTAs */}
-        <View style={styles.ctas}>
-          <AppButton
-            label="I'm a Family Member"
-            variant="primary"
-            fullWidth
-            size="lg"
-            leftIcon={<Ionicons name="people" size={20} color={Colors.textInverse} />}
-            onPress={() => navigation.navigate('SignIn')}
-          />
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
+        {/* Senior App Card */}
+        <View style={styles.seniorCard}>
+          <LogoBrand dark />
+          <View style={styles.appBadge}>
+            <Text style={styles.appBadgeText}>SENIOR APP</Text>
           </View>
-          <AppButton
-            label="I'm an Elder"
-            variant="secondary"
-            fullWidth
-            size="lg"
-            leftIcon={<Ionicons name="person" size={20} color={Colors.primary} />}
-            onPress={() => navigation.navigate('SignIn')}
-          />
-        </View>
-
-        {/* Demo shortcuts */}
-        <View style={styles.demoSection}>
-          <Text style={styles.demoLabel}>Demo quick access:</Text>
-          <View style={styles.demoRow}>
-            <AppButton
-              label="Elder Demo"
-              variant="ghost"
-              size="sm"
-              loading={isLoading}
-              onPress={loginAsElder}
-            />
-            <AppButton
-              label="Family Demo"
-              variant="ghost"
-              size="sm"
-              loading={isLoading}
-              onPress={loginAsFamily}
-            />
+          <Text style={styles.seniorTitle}>Daily check-ins made{'\n'}simple</Text>
+          <Text style={styles.seniorDesc}>
+            Voice-guided daily wellness check-ins with optional vital capture, one-tap help states, and a calm, senior-friendly experience.
+          </Text>
+          <View style={styles.featureList}>
+            {SENIOR_FEATURES.map((f, i) => (
+              <View key={i} style={styles.featureRow}>
+                <Ionicons name="checkmark-circle" size={16} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.featureText}>{f}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.btnRow}>
+            <TouchableOpacity
+              style={styles.outlineBtn}
+              onPress={() => navigation.navigate('SignIn', { role: 'elder' })}
+            >
+              <Text style={styles.outlineBtnText}>Senior Login</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.solidBtnLight}
+              onPress={() => navigation.navigate('SignUp', { role: 'elder' })}
+            >
+              <Text style={styles.solidBtnLightText}>Senior Sign Up</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </Animated.View>
+
+        {/* Family App Card */}
+        <View style={styles.familyCard}>
+          <View style={styles.appBadgeTeal}>
+            <Text style={styles.appBadgeTealText}>FAMILY APP</Text>
+          </View>
+          <Text style={styles.familyTitle}>Connected family{'\n'}visibility</Text>
+          <Text style={styles.familyDesc}>
+            Family members get live status, alert routing controls, optional vital capture settings, and secure linking to the senior account.
+          </Text>
+          <View style={styles.featureList}>
+            {FAMILY_FEATURES.map((f, i) => (
+              <View key={i} style={styles.featureRow}>
+                <Ionicons name="checkmark-circle" size={16} color={Colors.primary} />
+                <Text style={styles.familyFeatureText}>{f}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.btnRow}>
+            <TouchableOpacity
+              style={styles.outlineBtnTeal}
+              onPress={() => navigation.navigate('SignIn', { role: 'family' })}
+            >
+              <Text style={styles.outlineBtnTealText}>Family Login</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.solidBtnTeal}
+              onPress={() => navigation.navigate('SignUp', { role: 'family' })}
+            >
+              <Text style={styles.solidBtnTealText}>Family Sign Up</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Demo note */}
+        <View style={styles.demoNote}>
+          <Text style={styles.demoNoteText}>
+            Demo accounts: Eleanor / David Smith{'\n'}password: demo123
+          </Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -137,87 +135,198 @@ export function WelcomeScreen({ navigation }: Props): React.JSX.Element {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.backgroundMint,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.huge,
+  scroll: {
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxxl,
   },
-  logoSection: {
+  header: {
+    marginBottom: Spacing.xl,
+  },
+  brandRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.xxxl,
+    gap: Spacing.sm,
   },
-  iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#FDF2F8',
+  brandIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.card,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.lg,
-    shadowColor: Colors.urgent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
   },
-  appName: {
-    fontSize: Typography.fontSize3xl,
-    fontWeight: Typography.fontWeightExtraBold,
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
+  brandIconBoxDark: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
-  tagline: {
-    fontSize: Typography.fontSizeLg,
+  brandName: {
+    fontSize: 11,
+    fontWeight: Typography.fontWeightBold,
+    letterSpacing: 1.5,
+    color: Colors.primary,
+  },
+  brandSub: {
+    fontSize: Typography.fontSizeSm,
     color: Colors.textSecondary,
-    marginTop: Spacing.sm,
-    textAlign: 'center',
   },
-  features: {
-    marginBottom: Spacing.xxxl,
-    gap: Spacing.md,
+
+  // Senior Card (dark teal)
+  seniorCard: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.xxl,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  appBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  appBadgeText: {
+    fontSize: Typography.fontSizeXs,
+    fontWeight: Typography.fontWeightBold,
+    color: Colors.textInverse,
+    letterSpacing: 1,
+  },
+  seniorTitle: {
+    fontSize: Typography.fontSize2xl,
+    fontWeight: Typography.fontWeightBold,
+    color: Colors.textInverse,
+    marginBottom: Spacing.sm,
+    lineHeight: 32,
+  },
+  seniorDesc: {
+    fontSize: Typography.fontSizeSm,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20,
+    marginBottom: Spacing.lg,
+  },
+  featureList: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
   },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   featureText: {
-    fontSize: Typography.fontSizeMd,
-    color: Colors.textSecondary,
-  },
-  ctas: {
-    gap: Spacing.sm,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    marginVertical: Spacing.xs,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  dividerText: {
-    color: Colors.textSecondary,
     fontSize: Typography.fontSizeSm,
+    color: 'rgba(255,255,255,0.85)',
+    flex: 1,
   },
-  demoSection: {
-    marginTop: Spacing.xxl,
-    alignItems: 'center',
+  btnRow: {
+    flexDirection: 'row',
     gap: Spacing.sm,
   },
-  demoLabel: {
+  outlineBtn: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.5)',
+    borderRadius: Radius.xl,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  outlineBtnText: {
+    fontSize: Typography.fontSizeMd,
+    fontWeight: Typography.fontWeightSemiBold,
+    color: Colors.textInverse,
+  },
+  solidBtnLight: {
+    flex: 1,
+    backgroundColor: Colors.textInverse,
+    borderRadius: Radius.xl,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  solidBtnLightText: {
+    fontSize: Typography.fontSizeMd,
+    fontWeight: Typography.fontWeightSemiBold,
+    color: Colors.primary,
+  },
+
+  // Family Card (white)
+  familyCard: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xxl,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  appBadgeTeal: {
+    alignSelf: 'flex-start',
+    backgroundColor: `${Colors.primary}18`,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    marginBottom: Spacing.md,
+  },
+  appBadgeTealText: {
     fontSize: Typography.fontSizeXs,
-    color: Colors.textDisabled,
-    textTransform: 'uppercase',
+    fontWeight: Typography.fontWeightBold,
+    color: Colors.primary,
     letterSpacing: 1,
   },
-  demoRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
+  familyTitle: {
+    fontSize: Typography.fontSize2xl,
+    fontWeight: Typography.fontWeightBold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+    lineHeight: 32,
+  },
+  familyDesc: {
+    fontSize: Typography.fontSizeSm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: Spacing.lg,
+  },
+  familyFeatureText: {
+    fontSize: Typography.fontSizeSm,
+    color: Colors.textSecondary,
+    flex: 1,
+  },
+  outlineBtnTeal: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: Radius.xl,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  outlineBtnTealText: {
+    fontSize: Typography.fontSizeMd,
+    fontWeight: Typography.fontWeightSemiBold,
+    color: Colors.textPrimary,
+  },
+  solidBtnTeal: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.xl,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  solidBtnTealText: {
+    fontSize: Typography.fontSizeMd,
+    fontWeight: Typography.fontWeightSemiBold,
+    color: Colors.textInverse,
+  },
+
+  // Demo note
+  demoNote: {
+    backgroundColor: `${Colors.warning}22`,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  demoNoteText: {
+    fontSize: Typography.fontSizeSm,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

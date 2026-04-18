@@ -17,18 +17,25 @@ import { AuthStackParamList } from '../../types';
 import { Colors, Radius, Spacing, Typography } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'SignIn'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
 
-export function SignInScreen({ navigation, route }: Props): React.JSX.Element {
+export function SignUpScreen({ navigation, route }: Props): React.JSX.Element {
   const { role } = route.params;
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { loginAsElder, loginAsFamily, isLoading } = useAuth();
 
   const isElder = role === 'elder';
+  const accountLabel = isElder ? 'Senior account' : 'Family account';
 
-  async function handleLogin() {
+  async function handleCreate() {
+    if (!firstName.trim() || !email.trim() || !password.trim()) {
+      Alert.alert('Missing fields', 'Please fill in all required fields.');
+      return;
+    }
     try {
       if (isElder) {
         await loginAsElder();
@@ -36,7 +43,7 @@ export function SignInScreen({ navigation, route }: Props): React.JSX.Element {
         await loginAsFamily();
       }
     } catch (err) {
-      Alert.alert('Error', (err as Error).message ?? 'Login failed. Please try again.');
+      Alert.alert('Error', (err as Error).message ?? 'Sign up failed. Please try again.');
     }
   }
 
@@ -44,7 +51,6 @@ export function SignInScreen({ navigation, route }: Props): React.JSX.Element {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          {/* Card */}
           <View style={styles.card}>
             {/* Logo */}
             <View style={styles.logoRow}>
@@ -58,13 +64,37 @@ export function SignInScreen({ navigation, route }: Props): React.JSX.Element {
             </View>
 
             {/* Title */}
-            <Text style={styles.label}>Welcome back</Text>
-            <Text style={styles.title}>Login to CareSignal</Text>
+            <Text style={styles.label}>Create account</Text>
+            <Text style={styles.title}>Sign up for CareSignal</Text>
             <Text style={styles.subtitle}>
               {isElder
                 ? 'Senior-side access for daily check-ins and optional vitals.'
                 : 'Family-side access for alert controls and senior monitoring.'}
             </Text>
+
+            {/* Name row */}
+            <View style={styles.nameRow}>
+              <View style={[styles.inputWrap, styles.flex1]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="First name"
+                  placeholderTextColor={Colors.textDisabled}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  autoCapitalize="words"
+                />
+              </View>
+              <View style={[styles.inputWrap, styles.flex1]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Last name"
+                  placeholderTextColor={Colors.textDisabled}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
 
             {/* Email */}
             <View style={styles.inputWrap}>
@@ -102,27 +132,35 @@ export function SignInScreen({ navigation, route }: Props): React.JSX.Element {
               </TouchableOpacity>
             </View>
 
+            {/* Account type (read-only) */}
+            <View style={[styles.inputWrap, styles.dropdownWrap]}>
+              <Text style={styles.dropdownText}>{accountLabel}</Text>
+              <Ionicons name="chevron-down" size={18} color={Colors.textSecondary} />
+            </View>
+
             {/* Buttons */}
             <View style={styles.btnRow}>
               <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                 <Text style={styles.backBtnText}>Back</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.loginBtn, isLoading && styles.loginBtnDisabled]}
-                onPress={handleLogin}
+                style={[styles.createBtn, isLoading && styles.createBtnDisabled]}
+                onPress={handleCreate}
                 disabled={isLoading}
               >
-                <Text style={styles.loginBtnText}>{isLoading ? 'Logging in…' : 'Log In'}</Text>
+                <Text style={styles.createBtnText}>
+                  {isLoading ? 'Creating…' : 'Create Account'}
+                </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Sign up link */}
+            {/* Login link */}
             <TouchableOpacity
               style={styles.linkRow}
-              onPress={() => navigation.navigate('SignUp', { role })}
+              onPress={() => navigation.navigate('SignIn', { role })}
             >
-              <Text style={styles.linkText}>Need an account? </Text>
-              <Text style={styles.linkTextUnderline}>Sign up</Text>
+              <Text style={styles.linkText}>Already have an account? </Text>
+              <Text style={styles.linkTextUnderline}>Log in</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -134,6 +172,7 @@ export function SignInScreen({ navigation, route }: Props): React.JSX.Element {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.backgroundMint },
   flex: { flex: 1 },
+  flex1: { flex: 1 },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -193,6 +232,11 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: Spacing.xl,
   },
+  nameRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: 0,
+  },
   inputWrap: {
     borderWidth: 1,
     borderColor: Colors.border,
@@ -217,6 +261,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
   },
+  dropdownWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  dropdownText: {
+    flex: 1,
+    fontSize: Typography.fontSizeMd,
+    color: Colors.textPrimary,
+  },
   btnRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -235,17 +290,17 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeightSemiBold,
     color: Colors.textPrimary,
   },
-  loginBtn: {
+  createBtn: {
     flex: 2,
     backgroundColor: Colors.primary,
     borderRadius: Radius.xl,
     paddingVertical: Spacing.md,
     alignItems: 'center',
   },
-  loginBtnDisabled: {
+  createBtnDisabled: {
     opacity: 0.6,
   },
-  loginBtnText: {
+  createBtnText: {
     fontSize: Typography.fontSizeMd,
     fontWeight: Typography.fontWeightBold,
     color: Colors.textInverse,
