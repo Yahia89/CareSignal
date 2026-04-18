@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "CareSignal",
+    "slug": "caresignal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F0F4F8"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.digitalwebx.caresignal"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2E86AB"
+      },
+      "package": "com.digitalwebx.caresignal",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2E86AB"
+        }
+      ],
+      "expo-secure-store"
+    ]
+  }
+}

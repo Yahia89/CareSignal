@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:chatgpt.com)",
+      "Bash(python3 -c ' *)",
+      "Bash(python -c ' *)",
+      "Bash(python *)",
+      "Bash(npx create-expo-app@latest *)",
+      "Read(//e/DigitalWebX/**)",
+      "Bash(mkdir -p CareSignalTemp)",
+      "Bash(cp -r /e/DigitalWebX/CareSignalTemp/node_modules /e/DigitalWebX/CareSignal/node_modules)",
+      "Bash(cp -r /e/DigitalWebX/CareSignalTemp/assets /e/DigitalWebX/CareSignal/assets)",
+      "Bash(npm install *)",
+      "Bash(npm info *)",
+      "Bash(npx tsc *)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\(Object.keys\\(p.dependencies\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(npx expo *)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /F /PID 28328)",
+      "Bash(cmd *)",
+      "Bash(powershell *)",
+      "Bash(eas --version)",
+      "Bash(eas whoami *)"
+    ]
+  }
+}
