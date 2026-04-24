@@ -24,19 +24,23 @@ export function SignInScreen({ navigation, route }: Props): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { loginAsElder, loginAsFamily, isLoading } = useAuth();
+  const { loginWithEmail, isLoading } = useAuth();
 
   const isElder = role === 'elder';
 
   async function handleLogin() {
+    if (!email.trim()) {
+      Alert.alert('Missing Email', 'Please enter your email address.');
+      return;
+    }
+    if (!password) {
+      Alert.alert('Missing Password', 'Please enter your password.');
+      return;
+    }
     try {
-      if (isElder) {
-        await loginAsElder();
-      } else {
-        await loginAsFamily();
-      }
+      await loginWithEmail(email.trim(), password);
     } catch (err) {
-      Alert.alert('Error', (err as Error).message ?? 'Login failed. Please try again.');
+      Alert.alert('Login Failed', (err as Error).message ?? 'Please try again.');
     }
   }
 

@@ -124,7 +124,8 @@ export function WelcomeScreen({ navigation }: Props): React.JSX.Element {
         {/* Demo note */}
         <View style={styles.demoNote}>
           <Text style={styles.demoNoteText}>
-            Demo accounts: Eleanor / David Smith{'\n'}password: demo123
+            Senior: margaret@caresignal.com / senior123{'\n'}
+            Family: david@caresignal.com / family123
           </Text>
         </View>
       </ScrollView>

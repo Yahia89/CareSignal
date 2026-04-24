@@ -62,6 +62,20 @@ export function useAuth() {
     }
   }, [setLoading, storeSignOut]);
 
+  const loginWithEmail = useCallback(
+    async (email: string, password: string) => {
+      setLoading(true);
+      try {
+        const { session, user } = await authService.loginWithEmail(email, password);
+        setSession(session);
+        setUser(user);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setLoading, setSession, setUser],
+  );
+
   // Quick-login helpers for demo/testing
   const loginAsElder = useCallback(async () => {
     setLoading(true);
@@ -92,6 +106,7 @@ export function useAuth() {
     session,
     isLoading,
     isAuthenticated,
+    loginWithEmail,
     sendOtp,
     verifyOtp,
     selectRole,
