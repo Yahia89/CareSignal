@@ -1,9 +1,10 @@
 import { useCallback, useEffect } from 'react';
 import { useCheckInStore } from '../store/checkInStore';
 import { checkInService } from '../services/checkInService';
+import { alertService } from '../services/alertService';
 import { notifyFamilyOfCheckIn } from '../services/pushService';
 import { useAuthStore } from '../store/authStore';
-import { CheckInStatus, CheckInSlot } from '../types';
+import { CheckInStatus, CheckInSlot, AlertSeverity } from '../types';
 
 export function useCheckIn() {
   const { user } = useAuthStore();
@@ -48,6 +49,28 @@ export function useCheckIn() {
       try {
         const checkIn = await checkInService.submitCheckIn(user.id, status, slot);
         addToHistory(checkIn);
+
+        const first = user.name.split(' ')[0];
+        const severity: AlertSeverity =
+          status === 'urgent' ? 'urgent' : status === 'help' ? 'warning' : 'info';
+        const message =
+          status === 'urgent'
+            ? `${first} pressed Urgent Help.`
+            : status === 'help'
+              ? `${first} requested help.`
+              : `${first} completed their ${slot} check-in.`;
+
+        alertService
+          .createAlert('household-1', {
+            elderId: user.id,
+            elderName: user.name,
+            severity,
+            message,
+            timestamp: new Date().toISOString(),
+            read: false,
+          })
+          .catch(console.error);
+
         notifyFamilyOfCheckIn(user.name, user.id, status).catch(console.error);
         return checkIn;
       } finally {

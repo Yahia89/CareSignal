@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useHouseholdStore } from '../store/householdStore';
 import { householdService } from '../services/householdService';
 import { alertService } from '../services/alertService';
@@ -20,33 +20,30 @@ export function useHousehold() {
     getUnreadAlertCount,
   } = useHouseholdStore();
 
+  useEffect(() => {
+    const unsubscribe = alertService.listenToAlerts(HOUSEHOLD_ID, setAlerts);
+    return unsubscribe;
+  }, [setAlerts]);
+
   const fetchHousehold = useCallback(async () => {
     setLoading(true);
     try {
-      const [hh, al] = await Promise.all([
-        householdService.getHousehold(HOUSEHOLD_ID),
-        alertService.getAlerts(HOUSEHOLD_ID),
-      ]);
+      const hh = await householdService.getHousehold(HOUSEHOLD_ID);
       setHousehold(hh);
-      setAlerts(al);
     } finally {
       setLoading(false);
     }
-  }, [setLoading, setHousehold, setAlerts]);
+  }, [setLoading, setHousehold]);
 
   const refreshHousehold = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [hh, al] = await Promise.all([
-        householdService.getHousehold(HOUSEHOLD_ID),
-        alertService.getAlerts(HOUSEHOLD_ID),
-      ]);
+      const hh = await householdService.getHousehold(HOUSEHOLD_ID);
       setHousehold(hh);
-      setAlerts(al);
     } finally {
       setRefreshing(false);
     }
-  }, [setRefreshing, setHousehold, setAlerts]);
+  }, [setRefreshing, setHousehold]);
 
   const updateSchedule = useCallback(
     async (schedule: ScheduleConfig) => {
