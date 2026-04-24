@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useCheckInStore } from '../store/checkInStore';
 import { checkInService } from '../services/checkInService';
+import { notifyFamilyOfCheckIn } from '../services/pushService';
 import { useAuthStore } from '../store/authStore';
 import { CheckInStatus, CheckInSlot } from '../types';
 
@@ -47,6 +48,7 @@ export function useCheckIn() {
       try {
         const checkIn = await checkInService.submitCheckIn(user.id, status, slot);
         addToHistory(checkIn);
+        notifyFamilyOfCheckIn(user.name, user.id, status).catch(console.error);
         return checkIn;
       } finally {
         setSubmitting(false);

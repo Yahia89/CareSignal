@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Subscription } from 'expo-notifications';
 import { notificationService } from '../services/notificationService';
+import { saveUserPushToken } from '../services/pushService';
 import { useAuthStore } from '../store/authStore';
 
 export function useNotifications() {
@@ -11,7 +12,7 @@ export function useNotifications() {
   const registerForPushNotifications = useCallback(async () => {
     const token = await notificationService.registerPushToken();
     if (token && user) {
-      await notificationService.sendTokenToServer(token, user.id);
+      await saveUserPushToken(user.id, token, user.role, user.name);
     }
   }, [user]);
 
