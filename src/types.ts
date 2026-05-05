@@ -56,6 +56,13 @@ export interface RefreshTokenResponse {
   expires_in: number; // seconds until token expires
 }
 
+export interface GenerateInviteResponse {
+  data: {
+    invite_code: string;
+  };
+  error: null;
+}
+
 export interface PaginationParams {
   page?: number;
   limit?: number;
