@@ -5,27 +5,25 @@ import {
   ScrollView,
   Platform,
   KeyboardAvoidingView,
-  TouchableOpacity,
-  Image,
 } from 'react-native';
 import { HeartPulse } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import {
   Screen,
   Text,
-  Button,
   Spacer,
   Input,
   Select,
 } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
-import { useTheme } from '../../../shared/contexts/ThemeContext';
+import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
 import { authService } from '../services/authService';
 
 export const SignUpScreen = () => {
   const navigation = useNavigation<any>();
   const { dispatch } = useAuth();
-  const theme = useTheme();
+  const colors = useColors();
+  const tokens = useTokens();
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -67,11 +65,11 @@ export const SignUpScreen = () => {
           {/* ── Logo Header ── */}
           <View style={styles.header}>
             <View style={styles.logoIconWrap}>
-              <HeartPulse size={20} color={theme.colors.secondary} strokeWidth={2.5} />
+              <HeartPulse size={20} color={colors.accent.primary} strokeWidth={2.5} />
             </View>
             <Text
               variant="subheading"
-              color={theme.colors.secondary}
+              color={colors.accent.primary}
               style={styles.logoText}
             >
               iMedTechCare
@@ -83,13 +81,13 @@ export const SignUpScreen = () => {
           {/* ── White Card ── */}
           <View style={styles.card}>
             {/* Heading block */}
-            <Text variant="small" color={theme.colors.textSecondary} style={styles.eyebrow}>
+            <Text variant="small" color={colors.text.secondary} style={styles.eyebrow}>
               Create Account
             </Text>
             <Text style={styles.title}>
               Sign up for Care Signal
             </Text>
-            <Text variant="caption" color={theme.colors.textSecondary} style={styles.subtitle}>
+            <Text variant="caption" color={colors.text.secondary} style={styles.subtitle}>
               Family-Side access for alert controls and senior monitoring
             </Text>
 
@@ -147,18 +145,12 @@ export const SignUpScreen = () => {
             <Spacer y="lg" />
 
             {/* Create Account button */}
-            <TouchableOpacity
-              style={[styles.ctaButton, loading && styles.ctaButtonDisabled]}
+            <NeuButton
+              title={loading ? "Creating…" : "Create Account"}
               onPress={handleSignUp}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <Text style={styles.ctaText}>Creating…</Text>
-              ) : (
-                <Text style={styles.ctaText}>Create Account</Text>
-              )}
-            </TouchableOpacity>
+              loading={loading}
+              size="md"
+            />
 
             <Spacer y="lg" />
 
@@ -168,10 +160,10 @@ export const SignUpScreen = () => {
               activeOpacity={0.7}
               style={styles.loginRow}
             >
-              <Text variant="caption" color={theme.colors.textSecondary}>
+              <Text variant="caption" color={colors.text.secondary}>
                 Already have an account?{' '}
               </Text>
-              <Text variant="caption" color={theme.colors.secondary} style={styles.loginLink}>
+              <Text variant="caption" color={colors.accent.primary} style={styles.loginLink}>
                 Log in
               </Text>
             </TouchableOpacity>
@@ -186,25 +178,24 @@ export const SignUpScreen = () => {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: '#E9EFFA',
+    backgroundColor: colors.background.light,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing[20],
     paddingTop: Platform.OS === 'ios' ? 24 : 40,
-    paddingBottom: 48,
+    paddingBottom: spacing[48],
   },
 
-  // ── Logo ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing[8],
   },
   logoIconWrap: {
     width: 32,
     height: 32,
-    borderRadius: 8,
-    backgroundColor: '#D6EDE9',
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.neutral[200],
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -212,45 +203,37 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 15,
     letterSpacing: 0.2,
-    color: '#008471',
   },
 
-  // ── Card ──
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingHorizontal: 22,
-    paddingTop: 28,
-    paddingBottom: 28,
-    // Subtle neumorphic shadow for the card lift
-    shadowColor: '#B8C6D9',
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 6,
+    backgroundColor: colors.surface.light,
+    borderRadius: borderRadius.xl,
+    paddingHorizontal: spacing[22],
+    paddingTop: spacing[28],
+    paddingBottom: spacing[28],
+    ...getShadowStyle('md'),
   },
   eyebrow: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
-    marginBottom: 4,
+    color: colors.text.secondary,
+    marginBottom: spacing[4],
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   title: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#1A2138',
+    color: colors.text.primary,
     lineHeight: 34,
-    marginBottom: 8,
+    marginBottom: spacing[8],
   },
   subtitle: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.text.secondary,
     lineHeight: 20,
   },
 
-  // ── Form ──
   nameRow: {
     flexDirection: 'row',
   },
@@ -258,31 +241,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── CTA Button ──
-  ctaButton: {
-    backgroundColor: '#0D1425',
-    borderRadius: 12,
-    height: 52,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // Button shadow
-    shadowColor: '#0D1425',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  ctaButtonDisabled: {
-    opacity: 0.7,
-  },
-  ctaText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-
-  // ── Login link ──
   loginRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -290,7 +248,7 @@ const styles = StyleSheet.create({
   },
   loginLink: {
     fontWeight: '700',
-    color: '#008471',
+    color: colors.accent.primary,
     textDecorationLine: 'underline',
   },
 });

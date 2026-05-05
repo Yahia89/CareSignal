@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import { HeartPulse, Volume2, Activity, Users, Bell, Link as LinkIcon } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, Text, Button, Spacer, Card, NeumorphicView } from '../../../shared/components';
+import { Screen, Text, Spacer, Card } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
-import { useTheme } from '../../../shared/contexts/ThemeContext';
+import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
 import { authService } from '../services/authService';
 
 export const LoginScreen = () => {
   const navigation = useNavigation<any>();
   const { dispatch } = useAuth();
-  const theme = useTheme();
-  
+  const colors = useColors();
+  const tokens = useTokens();
+
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleLogin = async (role: 'elder' | 'family') => {
@@ -40,14 +41,14 @@ export const LoginScreen = () => {
 
   const BulletPoint = ({ icon: Icon, text, color }: { icon: any, text: string, color?: string }) => (
     <View style={styles.bulletPoint}>
-      <Icon size={18} color={color || theme.colors.textSecondary} />
+      <Icon size={18} color={color || colors.text.secondary} />
       <Spacer x="sm" />
-      <Text variant="caption" color={color || theme.colors.textSecondary} style={{ flex: 1 }}>{text}</Text>
+      <Text variant="caption" color={color || colors.text.secondary} style={{ flex: 1 }}>{text}</Text>
     </View>
   );
 
   return (
-    <Screen style={{ backgroundColor: theme.colors.background }}>
+    <Screen style={{ backgroundColor: colors.background }}>
       {/* Decorative background shapes */}
       <View style={[styles.decorativeShape, styles.topLeftShape, { backgroundColor: theme.colors.softMint }]} />
       <View style={[styles.decorativeShape, styles.topRightShape, { backgroundColor: theme.colors.softBlue }]} />
@@ -56,16 +57,12 @@ export const LoginScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Logo */}
         <View style={styles.header}>
-          <NeumorphicView 
-            borderRadius={16} 
-            containerStyle={styles.logoNeumorphic}
-            style={styles.logoInner}
-          >
-            <HeartPulse size={24} color={theme.colors.secondary} strokeWidth={2.5} />
-          </NeumorphicView>
+          <View style={[styles.logoNeumorphic, getShadowStyle('md')]}>
+            <HeartPulse size={24} color={colors.accent.primary} strokeWidth={2.5} />
+          </View>
           <View>
-            <Text variant="subheading" color={theme.colors.secondary} style={styles.logoText}>MEDTECH CARE</Text>
-            <Text variant="small" color={theme.colors.textSecondary}>CareSignal</Text>
+            <Text variant="subheading" color={colors.accent.primary} style={styles.logoText}>MEDTECH CARE</Text>
+            <Text variant="small" color={colors.text.secondary}>CareSignal</Text>
           </View>
         </View>
 
@@ -74,60 +71,57 @@ export const LoginScreen = () => {
         {/* Main Selection Container */}
         <View style={styles.container}>
           {/* Senior App Section */}
-          <NeumorphicView 
-            borderRadius={32}
-            containerStyle={styles.sectionNeumorphic}
-            style={[styles.sectionCard, { backgroundColor: theme.colors.seniorCard }]}
-          >
+          <NeuCard style={[styles.sectionCard, { backgroundColor: colors.neutral[800] }]}>
             <View style={styles.badgeContainer}>
-              <View style={[styles.badge, { backgroundColor: '#1E293B' }]}>
-                <Text variant="small" color="#94A3B8" style={{ fontWeight: '700' }}>SENIOR APP</Text>
+              <View style={[styles.badge, { backgroundColor: colors.neutral[900] }]}>
+                <Text variant="small" color={colors.neutral[400]} style={{ fontWeight: '700' }}>SENIOR APP</Text>
               </View>
             </View>
-            
-            <Text variant="title" color="#FFFFFF" style={styles.cardTitle}>Daily check-ins made simple</Text>
-            <Text variant="caption" color="#94A3B8" style={styles.cardDesc}>
+
+            <Text variant="title" color={colors.text.inverse} style={styles.cardTitle}>Daily check-ins made simple</Text>
+            <Text variant="caption" color={colors.neutral[300]} style={styles.cardDesc}>
               Voice-guided daily wellness check-ins with optional vital capture, one-tap help states, and a calm, senior-friendly experience.
             </Text>
 
             <Spacer y="lg" />
-            
-            <BulletPoint icon={HeartPulse} text="I'm OK / I Need Help / Urgent Help" color="#94A3B8" />
-            <BulletPoint icon={Volume2} text="Voice prompts and replay support" color="#94A3B8" />
-            <BulletPoint icon={Activity} text="Optional blood sugar and blood pressure capture" color="#94A3B8" />
+
+            <BulletPoint icon={HeartPulse} text="I'm OK / I Need Help / Urgent Help" color={colors.neutral[300]} />
+            <BulletPoint icon={Volume2} text="Voice prompts and replay support" color={colors.neutral[300]} />
+            <BulletPoint icon={Activity} text="Optional blood sugar and blood pressure capture" color={colors.neutral[300]} />
 
             <Spacer y="xl" />
 
             <View style={styles.buttonRow}>
-              <Button 
-                title="Senior Login" 
-                backgroundColor={theme.colors.secondary}
+              <NeuButton
+                title="Senior Login"
                 loading={loading === 'elder'}
                 onPress={() => handleLogin('elder')}
+                size="md"
                 style={{ flex: 1 }}
               />
               <Spacer x="md" />
-              <Button 
-                title="Sign Up" 
-                variant="neumorphic"
-                onPress={handleSignUp} 
+              <NeuButton
+                title="Sign Up"
+                variant="secondary"
+                onPress={handleSignUp}
+                size="md"
                 style={{ flex: 1 }}
               />
             </View>
-          </NeumorphicView>
+          </NeuCard>
 
           <Spacer y="lg" />
 
           {/* Family App Section */}
-          <Card style={[styles.sectionCard, { backgroundColor: '#FFFFFF' }]}>
+          <NeuCard style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
             <View style={styles.badgeContainer}>
-              <View style={[styles.badge, { backgroundColor: theme.colors.accent }]}>
-                <Text variant="small" color={theme.colors.secondary} style={{ fontWeight: '700' }}>FAMILY APP</Text>
+              <View style={[styles.badge, { backgroundColor: colors.accent.lighter }]}>
+                <Text variant="small" color={colors.accent.primary} style={{ fontWeight: '700' }}>FAMILY APP</Text>
               </View>
             </View>
 
-            <Text variant="title" color={theme.colors.text} style={styles.cardTitle}>Connected family visibility</Text>
-            <Text variant="caption" color={theme.colors.textSecondary} style={styles.cardDesc}>
+            <Text variant="title" color={colors.text.primary} style={styles.cardTitle}>Connected family visibility</Text>
+            <Text variant="caption" color={colors.text.secondary} style={styles.cardDesc}>
               Family members get live status, alert routing controls, optional vital capture settings, and secure linking to the senior account.
             </Text>
 
@@ -140,18 +134,19 @@ export const LoginScreen = () => {
             <Spacer y="xl" />
 
             <View style={styles.buttonRow}>
-              <Button 
-                title="Family Login" 
-                backgroundColor={theme.colors.primary}
+              <NeuButton
+                title="Family Login"
                 loading={loading === 'family'}
                 onPress={() => handleLogin('family')}
+                size="md"
                 style={{ flex: 1 }}
               />
               <Spacer x="md" />
-              <Button 
-                title="Sign Up" 
-                variant="neumorphic"
+              <NeuButton
+                title="Sign Up"
+                variant="secondary"
                 onPress={handleSignUp}
+                size="md"
                 style={{ flex: 1 }}
               />
             </View>
@@ -159,12 +154,12 @@ export const LoginScreen = () => {
             <Spacer y="lg" />
 
             {/* Demo Note */}
-            <View style={styles.demoNote}>
-              <Text variant="small" color="#92400E">
-                Demo accounts: <Text variant="small" color="#92400E" style={{ fontWeight: '700' }}>Eleanor / David Smith</Text> · password: <Text variant="small" color="#92400E" style={{ fontWeight: '700' }}>demo123</Text>
+            <View style={[styles.demoNote, { backgroundColor: colors.neutral[200] }]}>
+              <Text variant="small" color={colors.neutral[700]}>
+                Demo accounts: <Text variant="small" color={colors.neutral[700]} style={{ fontWeight: '700' }}>Eleanor / David Smith</Text> · password: <Text variant="small" color={colors.neutral[700]} style={{ fontWeight: '700' }}>demo123</Text>
               </Text>
             </View>
-          </Card>
+          </NeuCard>
         </View>
         <Spacer y="xxl" />
       </ScrollView>
@@ -197,7 +192,7 @@ const styles = StyleSheet.create({
     left: -60,
   },
   scrollContent: {
-    padding: 24,
+    padding: spacing[20],
     paddingTop: Platform.OS === 'ios' ? 20 : 40,
   },
   header: {
@@ -205,7 +200,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoNeumorphic: {
-    marginRight: 12,
+    marginRight: spacing[3],
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: borderRadius.lg,
+    padding: 0,
   },
   logoInner: {
     width: 48,
@@ -224,43 +225,38 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   sectionCard: {
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
+    padding: spacing[20],
+    borderRadius: borderRadius.xl,
+    marginBottom: spacing[16],
   },
   badgeContainer: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: spacing[16],
   },
   badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: spacing[12],
+    paddingVertical: spacing[6],
+    borderRadius: borderRadius.sm,
   },
   cardTitle: {
-    marginBottom: 12,
+    marginBottom: spacing[12],
     fontSize: 28,
   },
   cardDesc: {
-    marginBottom: 8,
+    marginBottom: spacing[8],
     lineHeight: 22,
   },
   bulletPoint: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing[12],
   },
   buttonRow: {
     flexDirection: 'row',
   },
   demoNote: {
-    backgroundColor: '#FEF3C7',
-    padding: 12,
-    borderRadius: 12,
+    padding: spacing[12],
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: '#FDE68A',
   }
 });

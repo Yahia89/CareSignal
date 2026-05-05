@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, Text, Button, Spacer, Input, Card } from '../../../shared/components';
-import { useTheme } from '../../../shared/contexts/ThemeContext';
+import { Screen, Text, Spacer, Input } from '../../../shared/components';
+import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius } from '../../../shared/design';
 import { useForgotPassword } from '../../../hooks/useForgotPassword';
 
 export const ForgotPasswordScreen = () => {
   const navigation = useNavigation<any>();
-  const theme = useTheme();
+  const colors = useColors();
+  const tokens = useTokens();
   const { loading, error, success, message, forgotPassword } = useForgotPassword();
 
   const [step, setStep] = useState<'request' | 'reset'>('request');
@@ -37,7 +38,7 @@ export const ForgotPasswordScreen = () => {
 
           <Spacer y="md" />
 
-          <Text variant="body" color={theme.colors.textSecondary} style={styles.description}>
+          <Text variant="body" color={colors.text.secondary} style={styles.description}>
             Enter your email address and we'll send you instructions to reset your password.
           </Text>
 
@@ -112,7 +113,7 @@ export const ForgotPasswordScreen = () => {
 
           <Spacer y="md" />
 
-          <Text variant="body" color={theme.colors.textSecondary} style={styles.description}>
+          <Text variant="body" color={colors.text.secondary} style={styles.description}>
             Check your email for the reset link. Enter the token and your new password below.
           </Text>
 
