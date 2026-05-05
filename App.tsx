@@ -1,20 +1,17 @@
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Providers } from './src/app/Providers';
+import { RootNavigator } from './src/navigation/RootNavigator';
+import { ErrorBoundary } from './src/shared/components/ErrorBoundary';
 
+// Optional: Wrap with Sentry.wrap if configured
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <ErrorBoundary>
+      <Providers>
+        <RootNavigator />
+        <StatusBar style="auto" />
+      </Providers>
+    </ErrorBoundary>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
