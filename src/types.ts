@@ -31,6 +31,21 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  success: boolean;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+  password_confirm: string;
+}
+
 export interface PaginationParams {
   page?: number;
   limit?: number;

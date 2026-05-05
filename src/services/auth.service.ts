@@ -1,5 +1,13 @@
 import apiClient from './api';
-import { AuthResponse, SignupPayload, LoginPayload, User } from '../types';
+import {
+  AuthResponse,
+  SignupPayload,
+  LoginPayload,
+  User,
+  ForgotPasswordPayload,
+  ForgotPasswordResponse,
+  ResetPasswordPayload,
+} from '../types';
 
 export const authService = {
   /**
@@ -58,5 +66,39 @@ export const authService = {
   getCurrentUser: async (): Promise<User> => {
     const response = await apiClient.get<{ user: User }>('/auth/me');
     return response.data.user;
+  },
+
+  /**
+   * Request password reset
+   * POST /auth/forgot-password
+   *
+   * Request body:
+   * {
+   *   "email": "senior@example.com"
+   * }
+   *
+   * Response: { message: string, success: boolean }
+   */
+  forgotPassword: async (payload: ForgotPasswordPayload): Promise<ForgotPasswordResponse> => {
+    const response = await apiClient.post<ForgotPasswordResponse>('/auth/forgot-password', payload);
+    return response.data;
+  },
+
+  /**
+   * Reset password with token
+   * POST /auth/reset-password
+   *
+   * Request body:
+   * {
+   *   "token": "reset_token_from_email",
+   *   "password": "newpassword123",
+   *   "password_confirm": "newpassword123"
+   * }
+   *
+   * Response: { message: string, success: boolean }
+   */
+  resetPassword: async (payload: ResetPasswordPayload): Promise<ForgotPasswordResponse> => {
+    const response = await apiClient.post<ForgotPasswordResponse>('/auth/reset-password', payload);
+    return response.data;
   },
 };
