@@ -7,6 +7,8 @@ import {
   ForgotPasswordPayload,
   ForgotPasswordResponse,
   ResetPasswordPayload,
+  RefreshTokenPayload,
+  RefreshTokenResponse,
 } from '../types';
 
 export const authService = {
@@ -99,6 +101,29 @@ export const authService = {
    */
   resetPassword: async (payload: ResetPasswordPayload): Promise<ForgotPasswordResponse> => {
     const response = await apiClient.post<ForgotPasswordResponse>('/auth/reset-password', payload);
+    return response.data;
+  },
+
+  /**
+   * Refresh access token
+   * POST /auth/refresh
+   *
+   * Request body:
+   * {
+   *   "refresh_token": "refresh_token_string"
+   * }
+   *
+   * Response: {
+   *   "access_token": "new_jwt_token",
+   *   "refresh_token": "new_refresh_token",
+   *   "expires_in": 3600
+   * }
+   *
+   * Note: Supabase rotates the refresh token on each refresh call.
+   * Must store the new refresh_token for next refresh.
+   */
+  refreshToken: async (payload: RefreshTokenPayload): Promise<RefreshTokenResponse> => {
+    const response = await apiClient.post<RefreshTokenResponse>('/auth/refresh', payload);
     return response.data;
   },
 };

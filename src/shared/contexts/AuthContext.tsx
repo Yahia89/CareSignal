@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useReducer, useMemo, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useMemo, ReactNode, useEffect, useRef } from 'react';
 import { User } from '../types/domain';
 import { authService } from '../../services/auth.service';
 import { storage } from '../../utils/storage';
 import { setAuthToken } from '../../services/api';
+import { setupTokenRefreshTimer, clearTokenRefreshTimer } from '../../utils/tokenManager';
 
 interface AuthState {
   user: User | null;
@@ -60,6 +61,7 @@ const AuthContext = createContext<{
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const tokenRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize auth from stored token
   useEffect(() => {
@@ -71,6 +73,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (token && user) {
           setAuthToken(token);
           dispatch({ type: 'INIT', payload: { user, token } });
+
+          // Setup automatic token refresh for existing token
+          tokenRefreshTimerRef.current = setupTokenRefreshTimer(token);
         } else {
           dispatch({ type: 'SET_LOADING', payload: false });
         }
@@ -81,6 +86,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     initAuth();
+
+    // Cleanup timer on unmount
+    return () => {
+      clearTokenRefreshTimer(tokenRefreshTimerRef.current);
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -100,6 +110,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await setAuthToken(access_token);
       await storage.setUser(user);
+
+      // Setup automatic token refresh
+      clearTokenRefreshTimer(tokenRefreshTimerRef.current);
+      tokenRefreshTimerRef.current = setupTokenRefreshTimer(access_token);
 
       dispatch({ type: 'LOGIN', payload: { user, token: access_token } });
       return true;
@@ -141,6 +155,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await setAuthToken(access_token);
       await storage.setUser(user);
 
+      // Setup automatic token refresh
+      clearTokenRefreshTimer(tokenRefreshTimerRef.current);
+      tokenRefreshTimerRef.current = setupTokenRefreshTimer(access_token);
+
       dispatch({ type: 'LOGIN', payload: { user, token: access_token } });
       return true;
     } catch (error: any) {
@@ -158,6 +176,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Clear refresh timer
+      clearTokenRefreshTimer(tokenRefreshTimerRef.current);
+      tokenRefreshTimerRef.current = null;
+
       await storage.clear();
       dispatch({ type: 'LOGOUT' });
     }

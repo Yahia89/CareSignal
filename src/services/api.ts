@@ -12,8 +12,8 @@ interface ApiResponse<T> {
 
 interface ApiError {
   message: string;
-  code?: string;
-  status?: number;
+  code?: string | undefined;
+  status?: number | undefined;
 }
 
 let authToken: string | null = null;

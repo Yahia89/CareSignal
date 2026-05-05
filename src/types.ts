@@ -46,6 +46,16 @@ export interface ResetPasswordPayload {
   password_confirm: string;
 }
 
+export interface RefreshTokenPayload {
+  refresh_token: string;
+}
+
+export interface RefreshTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number; // seconds until token expires
+}
+
 export interface PaginationParams {
   page?: number;
   limit?: number;

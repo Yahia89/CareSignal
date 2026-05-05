@@ -34,6 +34,32 @@ export const storage = {
     }
   },
 
+  // Refresh token storage (encrypted)
+  async setRefreshToken(token: string) {
+    try {
+      await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, token);
+    } catch (error) {
+      console.error('Error storing refresh token:', error);
+    }
+  },
+
+  async getRefreshToken(): Promise<string | null> {
+    try {
+      return await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+    } catch (error) {
+      console.error('Error retrieving refresh token:', error);
+      return null;
+    }
+  },
+
+  async removeRefreshToken() {
+    try {
+      await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+    } catch (error) {
+      console.error('Error removing refresh token:', error);
+    }
+  },
+
   // User data storage (AsyncStorage is fine for non-sensitive data)
   async setUser(user: any) {
     try {
