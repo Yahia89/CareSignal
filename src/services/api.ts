@@ -30,7 +30,7 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     if (authToken) {
-      config.headers.Authorization = `Bearer ${authToken}`;
+      config.headers.authorization = `Bearer ${authToken}`;
     }
     return config;
   },
@@ -39,13 +39,12 @@ apiClient.interceptors.request.use(
 
 // Response interceptor for handling errors
 apiClient.interceptors.response.use(
-  (response: AxiosResponse<ApiResponse<any>>) => response,
+  (response) => response,
   async (error: AxiosError<any>) => {
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       authToken = null;
       await storage.clear();
-      // Trigger logout event - this should be handled by auth context
     }
 
     const apiError: ApiError = {
@@ -58,10 +57,9 @@ apiClient.interceptors.response.use(
   }
 );
 
-export const setAuthToken = (token: string) => {
+export const setAuthToken = async (token: string) => {
   authToken = token;
-  // Also store in secure storage for persistence
-  storage.setToken(token);
+  await storage.setToken(token);
 };
 
 export const getAuthToken = (): string | null => {

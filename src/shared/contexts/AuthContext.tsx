@@ -98,8 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: apiUser.role === 'senior' ? 'elder' : 'family',
       };
 
-      setAuthToken(access_token);
-      await storage.setToken(access_token);
+      await setAuthToken(access_token);
       await storage.setUser(user);
 
       dispatch({ type: 'LOGIN', payload: { user, token: access_token } });
@@ -139,8 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: apiUser.role === 'senior' ? 'elder' : 'family',
       };
 
-      setAuthToken(access_token);
-      await storage.setToken(access_token);
+      await setAuthToken(access_token);
       await storage.setUser(user);
 
       dispatch({ type: 'LOGIN', payload: { user, token: access_token } });
