@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Text, Spacer, Input } from '../../../shared/components';
-import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius } from '../../../shared/design';
+import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
 import { useForgotPassword } from '../../../hooks/useForgotPassword';
 
 export const ForgotPasswordScreen = () => {
@@ -56,42 +56,42 @@ export const ForgotPasswordScreen = () => {
           {error && (
             <>
               <Spacer y="md" />
-              <Card
+              <NeuCard
                 style={{
-                  backgroundColor: theme.colors.error + '20',
+                  backgroundColor: colors.semantic.error + '20',
                   borderLeftWidth: 4,
-                  borderLeftColor: theme.colors.error,
+                  borderLeftColor: colors.semantic.error,
                 }}
               >
-                <Text color={theme.colors.error}>{error}</Text>
-              </Card>
+                <Text color={colors.semantic.error}>{error}</Text>
+              </NeuCard>
             </>
           )}
 
           {success && message && (
             <>
               <Spacer y="md" />
-              <Card
+              <NeuCard
                 style={{
-                  backgroundColor: theme.colors.success + '20',
+                  backgroundColor: colors.semantic.success + '20',
                   borderLeftWidth: 4,
-                  borderLeftColor: theme.colors.success,
+                  borderLeftColor: colors.semantic.success,
                 }}
               >
-                <Text color={theme.colors.success}>{message}</Text>
-              </Card>
+                <Text color={colors.semantic.success}>{message}</Text>
+              </NeuCard>
             </>
           )}
 
           <Spacer y="lg" />
 
-          <Button
+          <NeuButton
+            title={loading ? "Sending…" : "Send Reset Link"}
             onPress={handleRequestReset}
             disabled={!email.trim() || loading}
             loading={loading}
-          >
-            Send Reset Link
-          </Button>
+            size="md"
+          />
 
           <Spacer y="md" />
 
@@ -99,7 +99,7 @@ export const ForgotPasswordScreen = () => {
             <Text
               variant="caption"
               style={styles.backLink}
-              color={theme.colors.primary}
+              color={colors.accent.primary}
             >
               Back to Login
             </Text>
@@ -150,15 +150,15 @@ export const ForgotPasswordScreen = () => {
           {error && (
             <>
               <Spacer y="md" />
-              <Card
+              <NeuCard
                 style={{
-                  backgroundColor: theme.colors.error + '20',
+                  backgroundColor: colors.semantic.error + '20',
                   borderLeftWidth: 4,
-                  borderLeftColor: theme.colors.error,
+                  borderLeftColor: colors.semantic.error,
                 }}
               >
-                <Text color={theme.colors.error}>{error}</Text>
-              </Card>
+                <Text color={colors.semantic.error}>{error}</Text>
+              </NeuCard>
             </>
           )}
 
@@ -174,7 +174,8 @@ export const ForgotPasswordScreen = () => {
               >
                 <Text color={theme.colors.success}>{message}</Text>
                 <Spacer y="sm" />
-                <Button
+                <NeuButton
+                  title="Back to Login"
                   size="sm"
                   onPress={() => {
                     setStep('request');
@@ -183,9 +184,7 @@ export const ForgotPasswordScreen = () => {
                     setPassword('');
                     setPasswordConfirm('');
                   }}
-                >
-                  Back to Login
-                </Button>
+                />
               </Card>
             </>
           )}
@@ -194,15 +193,15 @@ export const ForgotPasswordScreen = () => {
             <>
               <Spacer y="lg" />
 
-              <Button
+              <NeuButton
+                title={loading ? "Resetting…" : "Reset Password"}
                 onPress={async () => {
                   await forgotPassword(email);
                 }}
                 disabled={!resetToken.trim() || !password.trim() || !passwordConfirm.trim() || loading}
                 loading={loading}
-              >
-                Reset Password
-              </Button>
+                size="md"
+              />
             </>
           )}
 
@@ -212,7 +211,7 @@ export const ForgotPasswordScreen = () => {
             <Text
               variant="caption"
               style={styles.backLink}
-              color={theme.colors.primary}
+              color={colors.accent.primary}
             >
               Back to Login
             </Text>
@@ -229,12 +228,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingHorizontal: spacing[20],
+    paddingVertical: spacing[40],
   },
   title: {
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing[8],
   },
   description: {
     textAlign: 'center',

@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { HeartPulse, LogOut, Bell, Link as LinkIcon, ShieldAlert, Camera, Volume2 } from 'lucide-react-native';
-import { Screen, Text, Button, Spacer, Card, NeumorphicView, StatusBadge } from '../../../shared/components';
+import { Screen, Text, Spacer, StatusBadge } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
-import { useTheme } from '../../../shared/contexts/ThemeContext';
 import { useSettings } from '../../../shared/contexts/SettingsContext';
+import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
 
 export const FamilyDashboardScreen = () => {
   const { width } = useWindowDimensions();
   const { state, dispatch } = useAuth();
-  const theme = useTheme();
+  const colors = useColors();
+  const tokens = useTokens();
   const { state: settingsState, updateSettings } = useSettings();
   
   const user = state.user;
@@ -24,24 +25,19 @@ export const FamilyDashboardScreen = () => {
 
   const ListItem = ({ icon: Icon, text }: { icon: any, text: string }) => (
     <View style={styles.listItem}>
-      <NeumorphicView 
-        borderRadius={10} 
-        containerStyle={styles.listIconContainer} 
-        style={styles.listIconInner}
-        inset
-      >
-        <Icon size={16} color={theme.colors.textSecondary} />
-      </NeumorphicView>
-      <Text variant="caption" color="#CBD5E1" style={{ flex: 1, marginLeft: 12 }}>{text}</Text>
+      <NeuCard style={[styles.listIconInner, { padding: 0 }]}>
+        <Icon size={16} color={colors.text.secondary} />
+      </NeuCard>
+      <Text variant="caption" color={colors.neutral[300]} style={{ flex: 1, marginLeft: 12 }}>{text}</Text>
     </View>
   );
 
   const CheckboxItem = ({ label, checked, onPress, color }: { label: string, checked: boolean, onPress: () => void, color?: string }) => (
     <TouchableOpacity style={styles.checkboxRow} onPress={onPress}>
-      <Text variant="body" color="#1E293B" style={{ flex: 1 }}>{label}</Text>
+      <Text variant="body" color={colors.text.primary} style={{ flex: 1 }}>{label}</Text>
       <View style={[
-        styles.checkbox, 
-        { borderColor: checked ? (color || theme.colors.primary) : '#CBD5E1', backgroundColor: checked ? (color || theme.colors.primary) : 'transparent' }
+        styles.checkbox,
+        { borderColor: checked ? (color || colors.accent.primary) : colors.neutral[300], backgroundColor: checked ? (color || colors.accent.primary) : 'transparent' }
       ]}>
         {checked && <View style={styles.checkInner} />}
       </View>
@@ -49,40 +45,36 @@ export const FamilyDashboardScreen = () => {
   );
 
   return (
-    <Screen style={{ backgroundColor: theme.colors.background }}>
-      <ScrollView 
+    <Screen style={{ backgroundColor: colors.background.light }}>
+      <ScrollView
         contentContainerStyle={[
-          styles.scrollContent, 
-          { padding: width > 600 ? 24 : 16 }
-        ]} 
+          styles.scrollContent,
+          { padding: width > 600 ? spacing[24] : spacing[16] }
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoGroup}>
-            <NeumorphicView 
-              borderRadius={12} 
-              containerStyle={styles.logoNeumorphic}
-              style={styles.logoInner}
-            >
-              <HeartPulse size={24} color={theme.colors.secondary} strokeWidth={2.5} />
-            </NeumorphicView>
+            <NeuCard style={[styles.logoInner, { padding: spacing[8] }]}>
+              <HeartPulse size={24} color={colors.accent.primary} strokeWidth={2.5} />
+            </NeuCard>
             <View>
-              <Text variant="subheading" color={theme.colors.secondary} style={styles.logoText}>MEDTECH CARE</Text>
-              <Text variant="small" color={theme.colors.textSecondary}>CareSignal</Text>
+              <Text variant="subheading" color={colors.accent.primary} style={styles.logoText}>MEDTECH CARE</Text>
+              <Text variant="small" color={colors.text.secondary}>CareSignal</Text>
             </View>
           </View>
-          
+
           <View style={styles.headerActions}>
-            <View style={styles.roleBadge}>
-              <Text variant="small" color={theme.colors.textSecondary}>{user?.name || 'test'} · Family</Text>
+            <View style={[styles.roleBadge, { borderColor: colors.neutral[300] }]}>
+              <Text variant="small" color={colors.text.secondary}>{user?.name || 'test'} · Family</Text>
             </View>
             <TouchableOpacity onPress={handleLogout}>
-              <NeumorphicView borderRadius={20} style={styles.logoutBtnInner}>
-                <LogOut size={18} color={theme.colors.text} />
+              <NeuCard style={[styles.logoutBtnInner, { padding: spacing[8] }]}>
+                <LogOut size={18} color={colors.text.primary} />
                 <Spacer x="xs" />
                 <Text variant="small" style={{ fontWeight: '700' }}>Log Out</Text>
-              </NeumorphicView>
+              </NeuCard>
             </TouchableOpacity>
           </View>
         </View>
@@ -91,9 +83,9 @@ export const FamilyDashboardScreen = () => {
 
         {/* Profile Header */}
         <View>
-          <Text variant="caption" color={theme.colors.textSecondary}>Linked Senior Profile</Text>
+          <Text variant="caption" color={colors.text.secondary}>Linked Senior Profile</Text>
           <Text variant="display" style={styles.profileName}>Eleanor Smith</Text>
-          <Text variant="caption" color={theme.colors.textSecondary}>
+          <Text variant="caption" color={colors.text.secondary}>
             Family and senior apps are connected through a shared account link.
           </Text>
         </View>
@@ -102,48 +94,47 @@ export const FamilyDashboardScreen = () => {
 
         {/* Action Buttons */}
         <View style={styles.actionRow}>
-          <Button 
-            title={showAlertSettings ? "Close Alert Settings" : "Alert Settings"} 
-            onPress={() => setShowAlertSettings(!showAlertSettings)} 
+          <NeuButton
+            title={showAlertSettings ? "Close Alert Settings" : "Alert Settings"}
+            onPress={() => setShowAlertSettings(!showAlertSettings)}
             variant={showAlertSettings ? "primary" : "secondary"}
-            backgroundColor={showAlertSettings ? "#0F172A" : undefined}
-            style={styles.actionBtn}
+            size="md"
           />
         </View>
 
         <Spacer y="xl" />
 
         {showAlertSettings ? (
-          <Card style={styles.settingsPanel}>
-            <View style={[styles.settingsContent, { padding: width > 600 ? 24 : 16 }]}>
+          <NeuCard style={styles.settingsPanel}>
+            <View style={[styles.settingsContent, { padding: width > 600 ? spacing[24] : spacing[16] }]}>
               <View style={[
                 styles.settingsHeader,
-                { 
+                {
                   flexDirection: width > 600 ? 'row' : 'column',
                   alignItems: width > 600 ? 'flex-start' : 'stretch',
                 }
               ]}>
                 <View style={{ flex: width > 600 ? 1 : undefined }}>
-                  <Text variant="caption" color={theme.colors.textSecondary}>Family Alert Settings</Text>
+                  <Text variant="caption" color={colors.text.secondary}>Family Alert Settings</Text>
                   <Text variant="title">Configure how help alerts are delivered</Text>
                 </View>
-                <Text variant="small" color={theme.colors.textSecondary} style={{ alignSelf: width > 600 ? 'auto' : 'flex-start' }}>Per response type</Text>
+                <Text variant="small" color={colors.text.secondary} style={{ alignSelf: width > 600 ? 'auto' : 'flex-start' }}>Per response type</Text>
               </View>
 
               <Spacer y="lg" />
 
               {/* Senior App Setting */}
-              <View style={styles.settingBox}>
+              <View style={[styles.settingBox, { borderColor: colors.neutral[300], backgroundColor: colors.surface.light }]}>
                 <View style={{ flex: 1 }}>
-                  <Text variant="small" color={theme.colors.textSecondary} style={{ fontWeight: '700' }}>Senior App Setting</Text>
+                  <Text variant="small" color={colors.text.secondary} style={{ fontWeight: '700' }}>Senior App Setting</Text>
                   <Text variant="heading" style={{ fontSize: 18, marginTop: 4 }}>Optional Vital Capture</Text>
-                  <Text variant="small" color={theme.colors.textSecondary} style={{ marginTop: 4 }}>
+                  <Text variant="small" color={colors.text.secondary} style={{ marginTop: 4 }}>
                     Allow the senior to optionally enter blood sugar or blood pressure during daily check-in.
                   </Text>
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => updateSettings({ vitalCaptureEnabled: !vitalCaptureEnabled })}
-                  style={[styles.switch, { backgroundColor: vitalCaptureEnabled ? '#0D9488' : '#E2E8F0' }]}
+                  style={[styles.switch, { backgroundColor: vitalCaptureEnabled ? colors.semantic.success : colors.neutral[300] }]}
                 >
                   <View style={[styles.switchKnob, { alignSelf: vitalCaptureEnabled ? 'flex-end' : 'flex-start' }]} />
                 </TouchableOpacity>
@@ -153,8 +144,8 @@ export const FamilyDashboardScreen = () => {
 
               {/* Alert Config Columns */}
               <View style={[styles.gridContainer, isTablet && styles.gridContainerHorizontal]}>
-                <View style={[styles.routingCard, { backgroundColor: '#FFFBED', borderColor: '#FEF3C7', flex: 1 }]}>
-                  <Text variant="heading" color="#92400E" style={{ marginBottom: 16 }}>I Need Help</Text>
+                <View style={[styles.routingCard, { backgroundColor: colors.semantic.warning + '20', borderColor: colors.semantic.warning + '40', flex: 1 }]}>
+                  <Text variant="heading" color={colors.semantic.warning} style={{ marginBottom: spacing[16] }}>I Need Help</Text>
                   <CheckboxItem 
                     label="Email Alert" 
                     checked={needHelpConfig.email} 
@@ -174,31 +165,31 @@ export const FamilyDashboardScreen = () => {
 
                 {isTablet ? <Spacer x="md" /> : <Spacer y="md" />}
 
-                <View style={[styles.routingCard, { backgroundColor: '#FEF2F2', borderColor: '#FEE2E2', flex: 1 }]}>
-                  <Text variant="heading" color="#991B1B" style={{ marginBottom: 16 }}>Urgent Help</Text>
+                <View style={[styles.routingCard, { backgroundColor: colors.semantic.error + '20', borderColor: colors.semantic.error + '40', flex: 1 }]}>
+                  <Text variant="heading" color={colors.semantic.error} style={{ marginBottom: spacing[16] }}>Urgent Help</Text>
                   <CheckboxItem 
                     label="Email Alert" 
                     checked={urgentHelpConfig.email} 
                     onPress={() => updateSettings({ urgentHelpConfig: { ...urgentHelpConfig, email: !urgentHelpConfig.email }})}
-                    color="#DC2626"
+                    color={colors.semantic.error}
                   />
                   <CheckboxItem 
                     label="Text Alert" 
                     checked={urgentHelpConfig.text} 
                     onPress={() => updateSettings({ urgentHelpConfig: { ...urgentHelpConfig, text: !urgentHelpConfig.text }})}
-                    color="#DC2626"
+                    color={colors.semantic.error}
                   />
                   <CheckboxItem 
                     label="Phone Call Alert" 
                     checked={urgentHelpConfig.phone} 
                     onPress={() => updateSettings({ urgentHelpConfig: { ...urgentHelpConfig, phone: !urgentHelpConfig.phone }})}
-                    color="#DC2626"
+                    color={colors.semantic.error}
                   />
                   <CheckboxItem 
                     label="Auto Call Senior Phone" 
                     checked={urgentHelpConfig.autoCall} 
                     onPress={() => updateSettings({ urgentHelpConfig: { ...urgentHelpConfig, autoCall: !urgentHelpConfig.autoCall }})}
-                    color="#DC2626"
+                    color={colors.semantic.error}
                   />
                 </View>
               </View>
@@ -209,30 +200,30 @@ export const FamilyDashboardScreen = () => {
             {/* Status Section */}
             <View style={[styles.statusSection, isTablet && styles.statusSectionHorizontal]}>
               {/* Main Status Card */}
-              <Card style={[styles.mainStatusCard, isTablet && { flex: 1.5 }]}>
-                <Text variant="caption" color={theme.colors.textSecondary}>Today's Status</Text>
+              <NeuCard style={[styles.mainStatusCard, isTablet && { flex: 1.5 }]}>
+                <Text variant="caption" color={colors.text.secondary}>Today's Status</Text>
                 <Text variant="title" style={styles.statusTitle}>Eleanor Smith</Text>
-                
+
                 <View style={styles.statusBadgeRow}>
                   <StatusBadge status="ok" />
                   <Spacer x="sm" />
-                  <View style={styles.lastCheckIn}>
-                    <Text variant="small" color={theme.colors.textSecondary}>Last check-in: 15:57</Text>
+                  <View style={[styles.lastCheckIn, { backgroundColor: colors.neutral[200] }]}>
+                    <Text variant="small" color={colors.text.secondary}>Last check-in: 15:57</Text>
                   </View>
                 </View>
 
                 <Spacer y="md" />
-                <Text variant="caption" color={theme.colors.textSecondary} style={styles.desc}>
+                <Text variant="caption" color={colors.text.secondary} style={styles.desc}>
                   CareSignal gives family members a simple daily pulse between visits, so they can quickly understand whether things are steady, need support, or require immediate escalation.
                 </Text>
-              </Card>
+              </NeuCard>
 
               {isTablet ? <Spacer x="lg" /> : <Spacer y="md" />}
 
               {/* Response Routing Card */}
-              <View style={[styles.darkCard, { backgroundColor: '#0A1121' }, isTablet && { flex: 1 }]}>
-                <Text variant="small" color="#94A3B8" style={{ fontWeight: '700', marginBottom: 16 }}>Response Routing</Text>
-                
+              <View style={[styles.darkCard, { backgroundColor: colors.neutral[800] }, isTablet && { flex: 1 }]}>
+                <Text variant="small" color={colors.neutral[400]} style={{ fontWeight: '700', marginBottom: spacing[16] }}>Response Routing</Text>
+
                 <ListItem icon={Bell} text="Family Alert Status: Standing by" />
                 <ListItem icon={ShieldAlert} text="Emergency Contact: Not engaged" />
                 <ListItem icon={LinkIcon} text="Linked account: Connected to Eleanor" />
@@ -243,42 +234,42 @@ export const FamilyDashboardScreen = () => {
 
             {/* Grid Stats */}
             <View style={[styles.gridContainer, isTablet && styles.gridContainerHorizontal]}>
-              <Card style={styles.gridCard}>
-                <Text variant="small" color={theme.colors.textSecondary}>Morning Check-In</Text>
+              <NeuCard style={styles.gridCard}>
+                <Text variant="small" color={colors.text.secondary}>Morning Check-In</Text>
                 <Text variant="heading" style={styles.gridValue}>15:57</Text>
-                <Text variant="small" color={theme.colors.textSecondary}>Primary daily touchpoint.</Text>
-              </Card>
+                <Text variant="small" color={colors.text.secondary}>Primary daily touchpoint.</Text>
+              </NeuCard>
               {!isTablet && <Spacer y="md" />}
               {isTablet && <Spacer x="md" />}
-              <Card style={styles.gridCard}>
-                <Text variant="small" color={theme.colors.textSecondary}>Care Status</Text>
+              <NeuCard style={styles.gridCard}>
+                <Text variant="small" color={colors.text.secondary}>Care Status</Text>
                 <Text variant="heading" style={styles.gridValue}>Doing well</Text>
-                <Text variant="small" color={theme.colors.textSecondary}>Signal captured from experience.</Text>
-              </Card>
+                <Text variant="small" color={colors.text.secondary}>Signal captured from experience.</Text>
+              </NeuCard>
               {!isTablet && <Spacer y="md" />}
               {isTablet && <Spacer x="md" />}
-              <Card style={styles.gridCard}>
-                <Text variant="small" color={theme.colors.textSecondary}>Next Step</Text>
+              <NeuCard style={styles.gridCard}>
+                <Text variant="small" color={colors.text.secondary}>Next Step</Text>
                 <Text variant="heading" style={styles.gridValue}>No action</Text>
-                <Text variant="small" color={theme.colors.textSecondary}>Status is currently stable.</Text>
-              </Card>
+                <Text variant="small" color={colors.text.secondary}>Status is currently stable.</Text>
+              </NeuCard>
             </View>
 
             <Spacer y="lg" />
 
             {/* Alert Routing Section */}
             <View>
-              <Text variant="small" color={theme.colors.textSecondary} style={{ fontWeight: '700', marginBottom: 12 }}>Current Alert Routing</Text>
+              <Text variant="small" color={colors.text.secondary} style={{ fontWeight: '700', marginBottom: spacing[12] }}>Current Alert Routing</Text>
               <View style={[styles.inlineCards, isTablet && styles.gridContainerHorizontal]}>
-                <View style={[styles.routingCard, { backgroundColor: '#FEFCE8' }]}>
-                  <Text variant="small" color="#854D0E" style={{ fontWeight: '700' }}>I Need Help</Text>
-                  <Text variant="small" color="#A16207">Email, Text</Text>
+                <View style={[styles.routingCard, { backgroundColor: colors.semantic.warning + '20', borderColor: colors.semantic.warning + '40' }]}>
+                  <Text variant="small" color={colors.semantic.warning} style={{ fontWeight: '700' }}>I Need Help</Text>
+                  <Text variant="small" color={colors.semantic.warning}>Email, Text</Text>
                 </View>
                 {!isTablet && <Spacer y="md" />}
                 {isTablet && <Spacer x="md" />}
-                <View style={[styles.routingCard, { backgroundColor: '#FEF2F2' }]}>
-                  <Text variant="small" color="#991B1B" style={{ fontWeight: '700' }}>Urgent Help</Text>
-                  <Text variant="small" color="#B91C1C">Email, Text, Phone Call...</Text>
+                <View style={[styles.routingCard, { backgroundColor: colors.semantic.error + '20', borderColor: colors.semantic.error + '40' }]}>
+                  <Text variant="small" color={colors.semantic.error} style={{ fontWeight: '700' }}>Urgent Help</Text>
+                  <Text variant="small" color={colors.semantic.error}>Email, Text, Phone Call...</Text>
                 </View>
               </View>
             </View>
@@ -293,7 +284,7 @@ export const FamilyDashboardScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
+    paddingTop: Platform.OS === 'ios' ? spacing[20] : spacing[40],
   },
   header: {
     flexDirection: 'row',
@@ -303,10 +294,7 @@ const styles = StyleSheet.create({
   logoGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -2,
-  },
-  logoNeumorphic: {
-    marginRight: 10,
+    marginTop: -spacing[2],
   },
   logoInner: {
     width: 40,
@@ -314,6 +302,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 0,
+    marginRight: spacing[8],
   },
   logoText: {
     fontWeight: '800',
@@ -335,13 +324,13 @@ const styles = StyleSheet.create({
   logoutBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: spacing[14],
+    paddingVertical: spacing[8],
   },
   profileName: {
     fontSize: 28,
-    marginTop: 4,
-    marginBottom: 4,
+    marginTop: spacing[4],
+    marginBottom: spacing[4],
   },
   actionRow: {
     flexDirection: 'row',
@@ -357,40 +346,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   mainStatusCard: {
-    padding: 24,
+    padding: spacing[24],
   },
   statusTitle: {
     fontSize: 24,
-    marginTop: 8,
-    marginBottom: 12,
+    marginTop: spacing[8],
+    marginBottom: spacing[12],
   },
   statusBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   lastCheckIn: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: spacing[12],
+    paddingVertical: spacing[6],
+    borderRadius: borderRadius.md,
   },
   desc: {
     lineHeight: 20,
   },
   darkCard: {
-    padding: 24,
-    borderRadius: 24,
+    padding: spacing[24],
+    borderRadius: borderRadius.2xl,
     justifyContent: 'center',
   },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing[16],
     backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 12,
-    borderRadius: 16,
+    padding: spacing[12],
+    borderRadius: borderRadius.lg,
   },
-  listIconContainer: {},
   listIconInner: {
     width: 32,
     height: 32,
@@ -406,11 +393,11 @@ const styles = StyleSheet.create({
   },
   gridCard: {
     flex: 1,
-    padding: 20,
+    padding: spacing[20],
   },
   gridValue: {
     fontSize: 20,
-    marginVertical: 8,
+    marginVertical: spacing[8],
     fontWeight: '700',
   },
   inlineCards: {
@@ -418,10 +405,9 @@ const styles = StyleSheet.create({
   },
   routingCard: {
     flex: 1,
-    padding: 20,
-    borderRadius: 20,
+    padding: spacing[20],
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
   },
   settingsPanel: {
     padding: 0,
@@ -431,22 +417,20 @@ const styles = StyleSheet.create({
   },
   settingsHeader: {
     justifyContent: 'space-between',
-    gap: 8,
+    gap: spacing[8],
   },
   settingBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
-    borderRadius: 16,
+    padding: spacing[16],
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   switch: {
     width: 50,
     height: 28,
     borderRadius: 14,
-    padding: 2,
+    padding: spacing[2],
     justifyContent: 'center',
   },
   switchKnob: {
@@ -463,16 +447,15 @@ const styles = StyleSheet.create({
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    backgroundColor: 'white',
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 8,
+    paddingVertical: spacing[12],
+    paddingHorizontal: spacing[12],
+    borderRadius: borderRadius.md,
+    marginBottom: spacing[8],
   },
   checkbox: {
     width: 20,
     height: 20,
-    borderRadius: 4,
+    borderRadius: borderRadius.xs,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',

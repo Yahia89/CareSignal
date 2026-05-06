@@ -1,20 +1,18 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { HeartPulse, LogOut, Volume2, Activity, ChevronDown, Camera } from 'lucide-react-native';
-import { Screen, Text, Button, Spacer, Card, Input, Select, NeumorphicView } from '../../../shared/components';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Platform, TouchableOpacity, useWindowDimensions, Modal } from 'react-native';
+import { HeartPulse, LogOut, Volume2, Activity, ChevronDown, Camera, Phone, X } from 'lucide-react-native';
+import { Screen, Text, Spacer, Input, Select } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
-import { useTheme } from '../../../shared/contexts/ThemeContext';
 import { useSettings } from '../../../shared/contexts/SettingsContext';
 import { useVoiceAssistant } from '../../../shared/hooks';
-import { Phone, X } from 'lucide-react-native';
-import { Modal } from 'react-native';
-import { useEffect } from 'react';
+import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
 
 export const CheckInHome = () => {
   const { width } = useWindowDimensions();
   const { state: settingsState } = useSettings();
   const { state, dispatch } = useAuth();
-  const theme = useTheme();
+  const colors = useColors();
+  const tokens = useTokens();
   const user = state.user;
 
   const [voiceOn, setVoiceOn] = useState(true);
@@ -56,7 +54,7 @@ export const CheckInHome = () => {
   };
 
   return (
-    <Screen style={{ backgroundColor: theme.colors.background }}>
+    <Screen style={{ backgroundColor: colors.background.light }}>
       <ScrollView 
         contentContainerStyle={[
           styles.scrollContent, 
@@ -70,16 +68,12 @@ export const CheckInHome = () => {
           { flexDirection: width > 600 ? 'row' : 'column', alignItems: width > 600 ? 'flex-start' : 'center' }
         ]}>
           <View style={styles.logoGroup}>
-            <NeumorphicView 
-              borderRadius={12} 
-              containerStyle={styles.logoNeumorphic}
-              style={styles.logoInner}
-            >
-              <HeartPulse size={24} color={theme.colors.secondary} strokeWidth={2.5} />
-            </NeumorphicView>
+            <NeuCard style={[styles.logoInner, { padding: spacing[8] }]}>
+              <HeartPulse size={24} color={colors.accent.primary} strokeWidth={2.5} />
+            </NeuCard>
             <View>
-              <Text variant="subheading" color={theme.colors.secondary} style={styles.logoText}>MEDTECH CARE</Text>
-              <Text variant="small" color={theme.colors.textSecondary}>CareSignal</Text>
+              <Text variant="subheading" color={colors.accent.primary} style={styles.logoText}>MEDTECH CARE</Text>
+              <Text variant="small" color={colors.text.secondary}>CareSignal</Text>
             </View>
           </View>
           
@@ -88,7 +82,7 @@ export const CheckInHome = () => {
             { marginTop: width > 600 ? 6 : 16 }
           ]}>
             <View style={styles.roleBadge}>
-              <Text variant="small" color={theme.colors.textSecondary}>test · Family App</Text>
+              <Text variant="small" color={colors.text.secondary}>test · Family App</Text>
             </View>
             <TouchableOpacity onPress={handleLogout}>
               <NeumorphicView borderRadius={20} style={styles.logoutBtnInner}>
@@ -103,17 +97,17 @@ export const CheckInHome = () => {
         <Spacer y="lg" />
 
         {/* Daily Check-In Welcome Card */}
-        <Card style={styles.welcomeCard}>
-          <Text variant="body" color={theme.colors.textSecondary}>Daily Check-In</Text>
+        <NeuCard style={styles.welcomeCard}>
+          <Text variant="body" color={colors.text.secondary}>Daily Check-In</Text>
           <Text variant="display" style={styles.welcomeTitle}>Good Morning, {user?.name || 'Eleanor'}</Text>
-          <Text variant="heading" color={theme.colors.textSecondary}>How are you today?</Text>
+          <Text variant="heading" color={colors.text.secondary}>How are you today?</Text>
           
           <Spacer y="md" />
           
           <View style={styles.voiceStatus}>
             <View style={[styles.statusDot, { backgroundColor: '#CBD5E1' }]} />
             <Spacer x="xs" />
-            <Text variant="caption" color={theme.colors.textSecondary}>Voice assistant ready</Text>
+            <Text variant="caption" color={colors.text.secondary}>Voice assistant ready</Text>
           </View>
 
           <Spacer y="lg" />
@@ -162,31 +156,31 @@ export const CheckInHome = () => {
               />
             </View>
           </View>
-        </Card>
+        </NeuCard>
 
         <Spacer y="md" />
 
         {/* Status Actions */}
         <View style={styles.statusButtons}>
-          <Button 
+          <NeuButton
             variant="primary"
-            backgroundColor="#059669"
-            onPress={() => handleStatusReport('ok')}
+            onPress={() => handleStatusReport(‘ok’)}
             title="I’m OK"
+            size="md"
             style={styles.statusBtn}
           />
-          <Button 
+          <NeuButton
             variant="primary"
-            backgroundColor="#F59E0B"
-            onPress={() => handleStatusReport('help')}
+            onPress={() => handleStatusReport(‘help’)}
             title="I Need Help"
+            size="md"
             style={styles.statusBtn}
           />
-          <Button 
+          <NeuButton
             variant="primary"
-            backgroundColor="#DC2626"
             onPress={() => handleStatusReport('urgent')}
             title="Urgent Help"
+            size="md"
             style={styles.statusBtn}
           />
         </View>
@@ -194,14 +188,14 @@ export const CheckInHome = () => {
         <Spacer y="md" />
 
         {/* Vital Capture Card */}
-        <Card style={styles.vitalsCard}>
+        <NeuCard style={styles.vitalsCard}>
           <View style={styles.vitalsHeader}>
             <View>
-              <Text variant="body" color={theme.colors.textSecondary}>Optional Vital Capture</Text>
+              <Text variant="body" color={colors.text.secondary}>Optional Vital Capture</Text>
               <Text variant="title" style={styles.vitalsTitle}>Capture blood sugar or blood pressure</Text>
             </View>
             <View style={styles.optionalBadge}>
-              <Text variant="small" color={theme.colors.secondary} style={{ fontWeight: '700' }}>Optional</Text>
+              <Text variant="small" color={colors.accent.primary} style={{ fontWeight: '700' }}>Optional</Text>
             </View>
           </View>
 
@@ -239,8 +233,8 @@ export const CheckInHome = () => {
             <View style={styles.inputArea}>
               <View style={styles.inputRow}>
                 <View style={styles.cameraGuide}>
-                  <Camera size={20} color={theme.colors.secondary} />
-                  <Text variant="small" color={theme.colors.textSecondary} style={styles.cameraText}>Scan</Text>
+                  <Camera size={20} color={colors.accent.primary} />
+                  <Text variant="small" color={colors.text.secondary} style={styles.cameraText}>Scan</Text>
                 </View>
                 <Spacer x="sm" />
                 <View style={{ flex: 1 }}>
@@ -267,7 +261,7 @@ export const CheckInHome = () => {
               />
             </View>
           </View>
-        </Card>
+        </NeuCard>
 
         <Spacer y="md" />
 
@@ -323,7 +317,7 @@ export const CheckInHome = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
+    paddingTop: Platform.OS === 'ios' ? spacing[20] : spacing[40],
   },
   header: {
     flexDirection: 'row',
@@ -333,10 +327,7 @@ const styles = StyleSheet.create({
   logoGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -2, // Pull logo up slightly
-  },
-  logoNeumorphic: {
-    marginRight: 10,
+    marginTop: -spacing[2],
   },
   logoInner: {
     width: 40,
@@ -344,6 +335,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 0,
+    marginRight: spacing[8],
   },
   logoText: {
     fontWeight: '800',
@@ -351,30 +343,30 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6, // Push name/logout down
+    marginTop: spacing[6],
   },
   roleBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: spacing[12],
+    paddingVertical: spacing[10],
     backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 20,
-    marginRight: 8,
+    borderRadius: borderRadius.xl,
+    marginRight: spacing[8],
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
   },
   logoutBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: spacing[14],
+    paddingVertical: spacing[8],
   },
   welcomeCard: {
-    padding: 24,
+    padding: spacing[24],
   },
   welcomeTitle: {
     fontSize: 32,
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: spacing[8],
+    marginBottom: spacing[4],
   },
   voiceStatus: {
     flexDirection: 'row',
@@ -392,15 +384,15 @@ const styles = StyleSheet.create({
   voiceToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing[16],
     height: 48,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
   },
   voiceSelectWrapper: {
     flex: 1,
   },
   statusButtons: {
-    gap: 16,
+    gap: spacing[16],
   },
   statusBtn: {
     height: 80,
