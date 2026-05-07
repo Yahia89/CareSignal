@@ -120,13 +120,16 @@ Default to none. Only write a comment when *why* is non-obvious (a workaround, a
 - Figma file: [Med-Tech-Care](https://www.figma.com/design/Mwpl0ZrMdAts95EaHmzrjh/Med-Tech-Care)
 - Linear / Jira / Slack: *(not configured — fill in when you have them)*
 
-## Tooling: Figma Dev Mode MCP
+## Tooling: Figma Remote MCP
 
-The repo is configured to use Figma's local Dev Mode MCP server (see [.mcp.json](.mcp.json)). To make it work on your machine:
+The repo is configured to use Figma's **remote** MCP server (see [.mcp.json](.mcp.json)). It runs on Figma's cloud at `https://mcp.figma.com/mcp` — free, no Dev/Full seat required.
 
-1. **Open the Figma *desktop* app** (web won't work — MCP is hosted by the desktop app locally on `http://127.0.0.1:3845`).
-2. Figma top-left menu → **Preferences** → toggle on **Enable Dev Mode MCP Server**.
-3. **Restart Claude Code** in this repo after the toggle. On first connect, Claude Code will prompt to approve the `figma` MCP server — approve it.
-4. Requires a **Dev or Full seat** on Professional/Org/Enterprise. Starter plans don't include Dev Mode MCP — fall back to sharing screenshots if you can't enable it.
+Setup on a new machine:
 
-If the connection fails, the `/sse` endpoint may have moved to `/mcp` in your Figma build. Edit `.mcp.json` accordingly.
+1. **Restart Claude Code** in this repo after pulling. On first connect, Claude Code will prompt OAuth — sign in to Figma in the browser tab it opens, then approve the connection.
+2. **In Figma**, open the file you want to work with and **select the frame/node** you want me to query. The MCP works on the currently selected frame.
+3. Once connected, the tools `mcp__figma__*` will be available.
+
+Notes:
+- The local Dev Mode MCP (`http://127.0.0.1:3845`) is **not** what we use — that one requires a paid Dev/Full seat. The remote one is free.
+- If OAuth fails, sign in to figma.com in your default browser first, then reconnect.
