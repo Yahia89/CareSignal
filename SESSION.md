@@ -46,6 +46,25 @@ Format:
 
 <!-- Add new sessions above this line -->
 
+## 2026-05-08 — LoginScreen redesign + shared auth UI extraction
+**Who:** Claude (Opus 4.7) with Isha
+**Branch:** `feature/design-remodification`
+**Goal:** Match LoginScreen to the new Figma frame (image 3 from the user's drop). Same design language as SignUp.
+**Done:** (commit `69e951c`)
+- **Replaced the role-card login picker** (Senior App / Family App tiles) with the new single-form login: Email, Password, Family Account, "Login" button, "Don't have an account? Sign up" footer.
+- **Extracted shared auth UI** to `src/features/auth/components/`:
+  - `OutlinedField` — the outlined text input both screens use (transparent fill, light-gray border, navy text, gray placeholder).
+  - `LogoCard` — the white CareSignal/MedTech Care header card.
+- **SignUpScreen now consumes these** instead of inlining them — both screens stay identical and changes propagate.
+- **Login UX details**: button disabled until email + password are non-empty; inline error message under the form on failure.
+- **Updated mock `authService.login`** to accept `{ email, password, familyAccount?, role? }` instead of a single phone string. Real API call is left commented for swap-in. Display name in the mock is derived from the email local-part.
+- **Verified**: tsc clean, iOS Metro bundle clean.
+**Visual side effects:** None — every other already-migrated screen is unchanged from the previous commit.
+**Left off at:** Auth pair (Login + SignUp) is now done. The next screen the user said they'd give me is **FamilyDashboard / Daily Checkin** (image 4).
+**Open questions / blockers:** None. Awaiting next screen drop.
+
+
+
 ## 2026-05-08 — Green rebrand + SignUpScreen redesign (Figma frame 1 of N)
 **Who:** Claude (Opus 4.7) with Isha
 **Branch:** `feature/design-remodification`
