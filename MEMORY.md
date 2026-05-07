@@ -117,4 +117,16 @@ Default to none. Only write a comment when *why* is non-obvious (a workaround, a
 ## Contacts / external resources
 
 - API: `https://carsignal-api.vercel.app/api` (docs at `/docs`)
+- Figma file: [Med-Tech-Care](https://www.figma.com/design/Mwpl0ZrMdAts95EaHmzrjh/Med-Tech-Care)
 - Linear / Jira / Slack: *(not configured — fill in when you have them)*
+
+## Tooling: Figma Dev Mode MCP
+
+The repo is configured to use Figma's local Dev Mode MCP server (see [.mcp.json](.mcp.json)). To make it work on your machine:
+
+1. **Open the Figma *desktop* app** (web won't work — MCP is hosted by the desktop app locally on `http://127.0.0.1:3845`).
+2. Figma top-left menu → **Preferences** → toggle on **Enable Dev Mode MCP Server**.
+3. **Restart Claude Code** in this repo after the toggle. On first connect, Claude Code will prompt to approve the `figma` MCP server — approve it.
+4. Requires a **Dev or Full seat** on Professional/Org/Enterprise. Starter plans don't include Dev Mode MCP — fall back to sharing screenshots if you can't enable it.
+
+If the connection fails, the `/sse` endpoint may have moved to `/mcp` in your Figma build. Edit `.mcp.json` accordingly.
