@@ -10,7 +10,7 @@ import { createCardStyle } from '../tokens/utils';
 
 interface NeuCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
   elevated?: boolean;
 }
 

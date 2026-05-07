@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { pushService } from '../services/pushService';
 import { useAuth } from '../../contexts/AuthContext';
-import { apiClient } from '../../api/client';
+import apiClient from '../../../services/api';
 
 export function useRegisterDevice() {
   const { state } = useAuth();

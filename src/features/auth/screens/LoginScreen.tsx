@@ -50,9 +50,9 @@ export const LoginScreen = () => {
   return (
     <Screen style={{ backgroundColor: colors.background }}>
       {/* Decorative background shapes */}
-      <View style={[styles.decorativeShape, styles.topLeftShape, { backgroundColor: theme.colors.softMint }]} />
-      <View style={[styles.decorativeShape, styles.topRightShape, { backgroundColor: theme.colors.softBlue }]} />
-      <View style={[styles.decorativeShape, styles.bottomLeftShape, { backgroundColor: theme.colors.softBeige }]} />
+      <View style={[styles.decorativeShape, styles.topLeftShape, { backgroundColor: colors.accent.lighter }]} />
+      <View style={[styles.decorativeShape, styles.topRightShape, { backgroundColor: colors.neutral[200] }]} />
+      <View style={[styles.decorativeShape, styles.bottomLeftShape, { backgroundColor: colors.neutral[100] }]} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Logo */}
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoNeumorphic: {
-    marginRight: spacing[3],
+    marginRight: spacing[4],
     width: 48,
     height: 48,
     justifyContent: 'center',

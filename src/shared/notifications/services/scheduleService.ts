@@ -10,6 +10,7 @@ export const scheduleService = {
         data: { slot },
       },
       trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
         hour,
         minute,
         repeats: true,

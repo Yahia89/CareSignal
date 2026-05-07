@@ -5,6 +5,7 @@ import {
   ScrollView,
   Platform,
   KeyboardAvoidingView,
+  TouchableOpacity,
 } from 'react-native';
 import { HeartPulse } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -16,7 +17,7 @@ import {
   Select,
 } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
-import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
+import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius, getShadowStyle, colors } from '../../../shared/design';
 import { authService } from '../services/authService';
 
 export const SignUpScreen = () => {
@@ -178,7 +179,7 @@ export const SignUpScreen = () => {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.background.light,
   },
   scrollContent: {
     paddingHorizontal: spacing[20],
@@ -206,9 +207,9 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surface.light,
     borderRadius: borderRadius.xl,
-    paddingHorizontal: spacing[22],
+    paddingHorizontal: spacing[20],
     paddingTop: spacing[28],
     paddingBottom: spacing[28],
     ...getShadowStyle('md'),

@@ -32,7 +32,7 @@ export const ForgotPasswordScreen = () => {
     <Screen style={styles.container}>
       {step === 'request' ? (
         <View style={styles.content}>
-          <Text variant="h1" style={styles.title}>
+          <Text variant="title" style={styles.title}>
             Reset Password
           </Text>
 
@@ -107,7 +107,7 @@ export const ForgotPasswordScreen = () => {
         </View>
       ) : (
         <View style={styles.content}>
-          <Text variant="h1" style={styles.title}>
+          <Text variant="title" style={styles.title}>
             Reset Your Password
           </Text>
 
@@ -165,14 +165,14 @@ export const ForgotPasswordScreen = () => {
           {success && message && (
             <>
               <Spacer y="md" />
-              <Card
+              <NeuCard
                 style={{
-                  backgroundColor: theme.colors.success + '20',
+                  backgroundColor: colors.semantic.success + '20',
                   borderLeftWidth: 4,
-                  borderLeftColor: theme.colors.success,
+                  borderLeftColor: colors.semantic.success,
                 }}
               >
-                <Text color={theme.colors.success}>{message}</Text>
+                <Text color={colors.semantic.success}>{message}</Text>
                 <Spacer y="sm" />
                 <NeuButton
                   title="Back to Login"
@@ -185,7 +185,7 @@ export const ForgotPasswordScreen = () => {
                     setPasswordConfirm('');
                   }}
                 />
-              </Card>
+              </NeuCard>
             </>
           )}
 

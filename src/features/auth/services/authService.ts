@@ -1,5 +1,4 @@
-import { apiClient } from '../../../shared/api/client';
-import { User } from '../../../shared/types/auth';
+import { User } from '../../../shared/types/domain';
 
 interface AuthResponse {
   user: User;
@@ -40,7 +39,6 @@ export const authService = {
         role: data.role || 'elder',
         name: `${data.firstName} ${data.lastName}`,
         phoneNumber: '1234567890',
-        email: data.email,
       },
       token: 'demo-token-signup',
     };

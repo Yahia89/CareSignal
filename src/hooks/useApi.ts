@@ -46,8 +46,9 @@ export function useApi<T = any>(
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.get<T>(endpoint);
-      const responseData = response.data.data || response.data;
+      const response = await apiClient.get<{ data?: T } | T>(endpoint);
+      const payload = response.data as { data?: T } & T;
+      const responseData = (payload?.data ?? payload) as T;
 
       setData(responseData);
 
@@ -90,12 +91,14 @@ export function useMutation<T = any, D = any>(
         setLoading(true);
         setError(null);
 
-        const response = await apiClient[method]<T>(endpoint, data);
-        const responseData = response.data.data || response.data;
+        const response = await apiClient[method]<{ data?: T } | T>(endpoint, data);
+        const payload = response.data as { data?: T } & T;
+        const responseData = (payload?.data ?? payload) as T;
 
         // Invalidate relevant cache entries
+        const firstSegment = endpoint.split('/')[0] ?? '';
         cache.forEach((_, key) => {
-          if (key.includes(endpoint.split('/')[0])) {
+          if (firstSegment && key.includes(firstSegment)) {
             cache.delete(key);
           }
         });

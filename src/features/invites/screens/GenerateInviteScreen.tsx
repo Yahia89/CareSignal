@@ -24,7 +24,7 @@ export const GenerateInviteScreen = () => {
   return (
     <Screen style={styles.container}>
       <View style={styles.content}>
-        <Text variant="h1" style={styles.title}>
+        <Text variant="title" style={styles.title}>
           Generate Invite
         </Text>
 
@@ -81,7 +81,7 @@ export const GenerateInviteScreen = () => {
               </Text>
               <Spacer y="sm" />
               <Text
-                variant="h2"
+                variant="heading"
                 style={{
                   fontFamily: 'monospace',
                   letterSpacing: 4,

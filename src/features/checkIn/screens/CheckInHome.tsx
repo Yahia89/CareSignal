@@ -85,11 +85,11 @@ export const CheckInHome = () => {
               <Text variant="small" color={colors.text.secondary}>test · Family App</Text>
             </View>
             <TouchableOpacity onPress={handleLogout}>
-              <NeumorphicView borderRadius={20} style={styles.logoutBtnInner}>
-                <LogOut size={18} color={theme.colors.text} />
+              <NeuCard style={styles.logoutBtnInner}>
+                <LogOut size={18} color={colors.text.primary} />
                 <Spacer x="xs" />
                 <Text variant="small" style={{ fontWeight: '700' }}>Log Out</Text>
-              </NeumorphicView>
+              </NeuCard>
             </TouchableOpacity>
           </View>
         </View>
@@ -164,14 +164,14 @@ export const CheckInHome = () => {
         <View style={styles.statusButtons}>
           <NeuButton
             variant="primary"
-            onPress={() => handleStatusReport(‘ok’)}
+            onPress={() => handleStatusReport('ok')}
             title="I’m OK"
             size="md"
             style={styles.statusBtn}
           />
           <NeuButton
             variant="primary"
-            onPress={() => handleStatusReport(‘help’)}
+            onPress={() => handleStatusReport('help')}
             title="I Need Help"
             size="md"
             style={styles.statusBtn}
@@ -249,15 +249,14 @@ export const CheckInHome = () => {
               
               <Spacer y="md" />
               
-              <Button 
-                title="Save Reading" 
-                backgroundColor="#006B5E"
+              <NeuButton
+                title="Save Reading"
+                size="md"
                 onPress={() => {
                   const type = vitalType.replace('_', ' ');
                   speak(`Saving your ${type} reading of ${vitalValue || 'zero'}`);
                   console.log('Saving vitals...');
                 }}
-                style={styles.saveBtnFull}
               />
             </View>
           </View>
@@ -268,11 +267,11 @@ export const CheckInHome = () => {
         {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity onPress={() => speak("Replaying instructions. How are you today?")}>
-            <NeumorphicView borderRadius={24} style={styles.replayBtnInner}>
-              <Volume2 size={18} color={theme.colors.text} />
+            <NeuCard style={styles.replayBtnInner}>
+              <Volume2 size={18} color={colors.text.primary} />
               <Spacer x="xs" />
               <Text variant="body">Replay Voice</Text>
-            </NeumorphicView>
+            </NeuCard>
           </TouchableOpacity>
         </View>
         <Spacer y="xxl" />
@@ -347,7 +346,7 @@ const styles = StyleSheet.create({
   },
   roleBadge: {
     paddingHorizontal: spacing[12],
-    paddingVertical: spacing[10],
+    paddingVertical: spacing[8],
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: borderRadius.xl,
     marginRight: spacing[8],
@@ -357,7 +356,7 @@ const styles = StyleSheet.create({
   logoutBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[14],
+    paddingHorizontal: spacing[12],
     paddingVertical: spacing[8],
   },
   welcomeCard: {

@@ -280,7 +280,7 @@ export const components = {
       },
       pressed: {
         backgroundColor: colors.accent.dark,
-        shadow: shadows.web.inset.md,
+        shadow: shadows.web.md,
       },
       disabled: {
         backgroundColor: colors.neutral[300],

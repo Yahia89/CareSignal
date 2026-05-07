@@ -22,6 +22,7 @@ interface NeuButtonProps {
   size?: 'sm' | 'md' | 'lg';
   state?: 'default' | 'pressed' | 'disabled';
   loading?: boolean;
+  disabled?: boolean;
   variant?: 'primary' | 'secondary';
   style?: ViewStyle;
 }
@@ -32,13 +33,15 @@ export const NeuButton: React.FC<NeuButtonProps> = ({
   size = 'md',
   state = 'default',
   loading = false,
+  disabled = false,
   variant = 'primary',
   style,
 }) => {
   const { isDark } = useThemeMode();
-  const isDisabled = state === 'disabled' || loading;
+  const isDisabled = state === 'disabled' || loading || disabled;
+  const effectiveState = isDisabled ? 'disabled' : state;
 
-  const buttonStyle = createNeuButtonStyle(state, size, isDark);
+  const buttonStyle = createNeuButtonStyle(effectiveState, size, isDark);
   const textStyle = createTypography(size === 'sm' ? 'sm' : 'base', 'semibold');
 
   return (

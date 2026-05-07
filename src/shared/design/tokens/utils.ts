@@ -161,7 +161,7 @@ export const createButtonStyle = (
   const sizeKey = size as keyof typeof buttonToken.primary.padding;
 
   return {
-    ...createPadding('12', undefined, size === 'lg' ? '16' : '12'),
+    ...createPadding(12, undefined, size === 'lg' ? 16 : 12),
     minHeight: buttonToken.primary.minHeight[sizeKey],
     borderRadius: buttonToken.primary.borderRadius,
     backgroundColor: tokens.colors.accent.primary,
@@ -183,7 +183,7 @@ export const createButtonStyle = (
 export const createCardStyle = (isDark: boolean = false): ViewStyle => {
   const cardToken = tokens.components.card;
   return {
-    ...createPadding('20'),
+    ...createPadding(20),
     borderRadius: cardToken.borderRadius,
     backgroundColor: isDark ? tokens.colors.surface.dark : tokens.colors.surface.light,
     ...getShadowStyle('md', isDark),
@@ -202,7 +202,7 @@ export const createCardStyle = (isDark: boolean = false): ViewStyle => {
 export const createInputStyle = (isDark: boolean = false): ViewStyle => {
   const inputToken = tokens.components.input;
   return {
-    ...createPadding('12', '16'),
+    ...createPadding(12, 16),
     minHeight: inputToken.minHeight,
     borderRadius: inputToken.borderRadius,
     backgroundColor: isDark ? tokens.colors.neutral[800] : tokens.colors.neutral[50],
@@ -277,7 +277,7 @@ export const createTypography = (
 ): TextStyle => {
   return {
     fontSize: tokens.typography.fontSize[size],
-    fontWeight: tokens.typography.fontWeight[weight],
+    fontWeight: String(tokens.typography.fontWeight[weight]) as TextStyle['fontWeight'],
     fontFamily: tokens.typography.fontFamily.default,
   };
 };

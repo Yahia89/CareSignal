@@ -200,7 +200,7 @@ export const FamilyDashboardScreen = () => {
             {/* Status Section */}
             <View style={[styles.statusSection, isTablet && styles.statusSectionHorizontal]}>
               {/* Main Status Card */}
-              <NeuCard style={[styles.mainStatusCard, isTablet && { flex: 1.5 }]}>
+              <NeuCard style={[styles.mainStatusCard, isTablet ? { flex: 1.5 } : {}]}>
                 <Text variant="caption" color={colors.text.secondary}>Today's Status</Text>
                 <Text variant="title" style={styles.statusTitle}>Eleanor Smith</Text>
 
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   logoutBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[14],
+    paddingHorizontal: spacing[12],
     paddingVertical: spacing[8],
   },
   profileName: {
