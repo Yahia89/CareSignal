@@ -6,7 +6,7 @@ export const DashboardScreen = () => {
   const colors = useColors();
 
   return (
-    <Screen style={{ padding: spacing[16], backgroundColor: colors.background.light }}>
+    <Screen style={{ padding: spacing[16], backgroundColor: colors.background }}>
       <Text variant="title">Family Dashboard</Text>
       <Spacer y="lg" />
       <NeuCard>

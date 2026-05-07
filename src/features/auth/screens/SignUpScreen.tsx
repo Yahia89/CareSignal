@@ -178,7 +178,7 @@ export const SignUpScreen = () => {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background.light,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     paddingHorizontal: spacing[20],
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: colors.surface.light,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
     paddingHorizontal: spacing[22],
     paddingTop: spacing[28],

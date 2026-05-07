@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Copy, Check } from 'lucide-react-native';
-import { Screen, Text, Button, Spacer, Card } from '../../../shared/components';
-import { useTheme } from '../../../shared/contexts/ThemeContext';
+import { Screen, Text, Spacer } from '../../../shared/components';
 import { useGenerateInvite } from '../../../hooks/useGenerateInvite';
+import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius } from '../../../shared/design';
 
 export const GenerateInviteScreen = () => {
-  const theme = useTheme();
+  const colors = useColors();
+  const tokens = useTokens();
   const { loading, error, inviteCode, generateInvite, copyToClipboard, reset } = useGenerateInvite();
   const [copied, setCopied] = React.useState(false);
 
@@ -31,7 +32,7 @@ export const GenerateInviteScreen = () => {
 
         <Text
           variant="body"
-          color={theme.colors.textSecondary}
+          color={colors.text.secondary}
           style={styles.description}
         >
           Create an invite code to share with family members or caregivers.
@@ -43,40 +44,39 @@ export const GenerateInviteScreen = () => {
           <>
             {error && (
               <>
-                <Card
+                <NeuCard
                   style={{
-                    backgroundColor: theme.colors.error + '20',
+                    backgroundColor: colors.semantic.error + '20',
                     borderLeftWidth: 4,
-                    borderLeftColor: theme.colors.error,
+                    borderLeftColor: colors.semantic.error,
                   }}
                 >
-                  <Text color={theme.colors.error}>{error}</Text>
-                </Card>
+                  <Text color={colors.semantic.error}>{error}</Text>
+                </NeuCard>
                 <Spacer y="md" />
               </>
             )}
 
-            <Button
+            <NeuButton
+              title={loading ? "Generating…" : "Generate Invite Code"}
               onPress={generateInvite}
               disabled={loading}
               loading={loading}
-              size="lg"
-            >
-              Generate Invite Code
-            </Button>
+              size="md"
+            />
           </>
         ) : (
           <>
-            <Card
+            <NeuCard
               style={{
-                backgroundColor: theme.colors.success + '10',
+                backgroundColor: colors.semantic.success + '10',
                 borderWidth: 2,
-                borderColor: theme.colors.success,
-                paddingVertical: 24,
+                borderColor: colors.semantic.success,
+                paddingVertical: spacing[24],
                 alignItems: 'center',
               }}
             >
-              <Text variant="caption" color={theme.colors.textSecondary}>
+              <Text variant="caption" color={colors.text.secondary}>
                 Your Invite Code
               </Text>
               <Spacer y="sm" />
@@ -96,67 +96,67 @@ export const GenerateInviteScreen = () => {
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  backgroundColor: theme.colors.success + '20',
-                  borderRadius: 8,
+                  paddingHorizontal: spacing[16],
+                  paddingVertical: spacing[8],
+                  backgroundColor: colors.semantic.success + '20',
+                  borderRadius: borderRadius.sm,
                 }}
               >
                 {copied ? (
                   <>
-                    <Check size={16} color={theme.colors.success} />
+                    <Check size={16} color={colors.semantic.success} />
                     <Text
                       variant="caption"
-                      color={theme.colors.success}
-                      style={{ marginLeft: 6 }}
+                      color={colors.semantic.success}
+                      style={{ marginLeft: spacing[6] }}
                     >
                       Copied!
                     </Text>
                   </>
                 ) : (
                   <>
-                    <Copy size={16} color={theme.colors.success} />
+                    <Copy size={16} color={colors.semantic.success} />
                     <Text
                       variant="caption"
-                      color={theme.colors.success}
-                      style={{ marginLeft: 6 }}
+                      color={colors.semantic.success}
+                      style={{ marginLeft: spacing[6] }}
                     >
                       Copy Code
                     </Text>
                   </>
                 )}
               </TouchableOpacity>
-            </Card>
+            </NeuCard>
 
             <Spacer y="lg" />
 
-            <Card
+            <NeuCard
               style={{
-                backgroundColor: theme.colors.info + '10',
+                backgroundColor: colors.semantic.info + '10',
                 borderLeftWidth: 4,
-                borderLeftColor: theme.colors.info,
+                borderLeftColor: colors.semantic.info,
               }}
             >
-              <Text variant="caption" color={theme.colors.info} style={{ fontWeight: '600' }}>
+              <Text variant="caption" color={colors.semantic.info} style={{ fontWeight: '600' }}>
                 How to Share
               </Text>
               <Spacer y="sm" />
-              <Text variant="caption" color={theme.colors.textSecondary}>
+              <Text variant="caption" color={colors.text.secondary}>
                 • Share this code with family or caregivers{'\n'}
                 • They can enter it during signup to join your household{'\n'}
                 • Each code can be used multiple times
               </Text>
-            </Card>
+            </NeuCard>
 
             <Spacer y="lg" />
 
-            <Button
+            <NeuButton
+              title="Generate Another Code"
               onPress={handleGenerateNew}
               disabled={loading}
               variant="secondary"
-            >
-              Generate Another Code
-            </Button>
+              size="md"
+            />
           </>
         )}
       </View>
@@ -170,12 +170,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingHorizontal: spacing[20],
+    paddingVertical: spacing[40],
   },
   title: {
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing[8],
   },
   description: {
     textAlign: 'center',

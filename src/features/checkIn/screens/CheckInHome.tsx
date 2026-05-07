@@ -54,7 +54,7 @@ export const CheckInHome = () => {
   };
 
   return (
-    <Screen style={{ backgroundColor: colors.background.light }}>
+    <Screen style={{ backgroundColor: colors.background }}>
       <ScrollView 
         contentContainerStyle={[
           styles.scrollContent, 

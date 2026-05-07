@@ -45,7 +45,7 @@ export const FamilyDashboardScreen = () => {
   );
 
   return (
-    <Screen style={{ backgroundColor: colors.background.light }}>
+    <Screen style={{ backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -124,7 +124,7 @@ export const FamilyDashboardScreen = () => {
               <Spacer y="lg" />
 
               {/* Senior App Setting */}
-              <View style={[styles.settingBox, { borderColor: colors.neutral[300], backgroundColor: colors.surface.light }]}>
+              <View style={[styles.settingBox, { borderColor: colors.neutral[300], backgroundColor: colors.surface }]}>
                 <View style={{ flex: 1 }}>
                   <Text variant="small" color={colors.text.secondary} style={{ fontWeight: '700' }}>Senior App Setting</Text>
                   <Text variant="heading" style={{ fontSize: 18, marginTop: 4 }}>Optional Vital Capture</Text>
@@ -194,7 +194,7 @@ export const FamilyDashboardScreen = () => {
                 </View>
               </View>
             </View>
-          </Card>
+          </NeuCard>
         ) : (
           <>
             {/* Status Section */}
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   },
   darkCard: {
     padding: spacing[24],
-    borderRadius: borderRadius.2xl,
+    borderRadius: borderRadius['2xl'],
     justifyContent: 'center',
   },
   listItem: {
