@@ -20,6 +20,33 @@ We already have two AuthContexts, two API clients, two User types, two hook dire
 
 ## Gotchas (things that cost us time)
 
+### `spacing` keys are NOT a continuous range
+`spacing` only includes: `0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64`. There's no `spacing[3]`, `spacing[10]`, `spacing[14]`, `spacing[22]`, etc. TypeScript will reject these at compile time. Pick an adjacent value.
+
+### `Text` doesn't have `h1`/`h2` variants
+The variant union is `'display' | 'title' | 'heading' | 'subheading' | 'body' | 'caption' | 'small'`. If you're porting HTML-style code, map `h1 → title`, `h2 → heading`.
+
+### Module-scope `StyleSheet` sees the *static* `colors`, not the hook's
+At module scope, `colors` is the imported tokens object: `colors.background = { light, dark }` and `colors.surface = { light, dark }`. Inside a component, `useColors()` shadows it and returns resolved strings. So:
+- In a component body: `colors.background` ✅ (string)
+- In a `StyleSheet.create({...})` block at module scope: `colors.background.light` ✅ (string), `colors.background` ❌ (object — RN's `backgroundColor` will reject it)
+
+### `lucide-react-native` no longer exports `icons`
+Old code did `import { icons } from 'lucide-react-native'; icons[name]`. The map is gone. Pass icon components directly: `import { HeartPulse } from 'lucide-react-native'; <HeartPulse size={24} />` or use our `<Icon icon={HeartPulse} />` wrapper.
+
+### `expo-notifications` SDK 54 breakages
+- `NotificationBehavior` now requires `shouldShowBanner` and `shouldShowList` in addition to `shouldShowAlert`.
+- Calendar triggers must include `type: Notifications.SchedulableTriggerInputTypes.CALENDAR`.
+- `Notifications.removeNotificationSubscription(sub)` is gone — call `sub.remove()`.
+
+### `useRef<T>()` (no arg) won't compile under newer `@types/react`
+You'll get "Expected 1 arguments, but got 0". Pass an initial value (typically `null`) and widen the type: `useRef<T | null>(null)`.
+
+### `CheckInHome.tsx` had a `Button` from react-native
+There's a `Button` primitive in `react-native` that's nothing like our `NeuButton`. If you see `<Button title=... />` and the import is from `'react-native'`, that's the primitive. Replace with `NeuButton` from `~/shared/design`.
+
+
+
 ### `useColors().background` is a string, not an object
 The hook spreads `tokens.colors` then overwrites `background` and `surface` with the mode-resolved string. So:
 - `colors.background` → `'#FFFFFF'` ✅ (use this)
@@ -68,12 +95,13 @@ Default to none. Only write a comment when *why* is non-obvious (a workaround, a
 
 ## Active migrations / tech debt
 
-- [ ] **CheckInHome.tsx**: still uses legacy `theme` import, `<NeumorphicView>`, and has a stray `Button` import from `react-native` (the React Native primitive, not our component). Migrate fully.
-- [ ] **SignUpScreen.tsx line 20**: imports `colors` from `~/shared/design` and then shadows it with `useColors()` on line 26. Drop the package-level import.
+- [x] ~~CheckInHome.tsx legacy imports~~ — fixed 2026-05-08 (commit `1a9fc08`)
+- [x] ~~Two API clients~~ — deleted `src/shared/api/` 2026-05-08 (was an unused fetch stub)
+- [ ] **SignUpScreen.tsx line 20**: still imports `colors` from `~/shared/design` and shadows it with `useColors()` on line 26. The static `colors` *is* used by the module-scope StyleSheet, so this is intentional now — but the dual usage is fragile. Consider splitting into `staticColors` + `colors`.
 - [ ] **Two `AuthContext` files**: delete `src/contexts/AuthContext.tsx` once nothing imports it.
-- [ ] **Two API clients**: delete `src/shared/api/client.ts` (incomplete fetch stub) once we're sure nothing imports it.
-- [ ] **Two User/Role types**: long-term, pick one. Short-term, the mapping in `AuthContext` is the contract.
+- [ ] **Two User/Role types**: long-term, pick one. Short-term, the mapping in `AuthContext` (`'senior' → 'elder'`) is the contract.
 - [ ] **No tests**: pick a runner (Jest is the obvious default for RN/Expo) before the codebase grows further.
+- [ ] **Smoke-test on a simulator**: bundle compiles, but no one has actually run the app since the design-system migration. Worth a 5-minute sanity check.
 
 ---
 
