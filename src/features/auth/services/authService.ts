@@ -5,21 +5,27 @@ interface AuthResponse {
   token: string;
 }
 
+interface LoginPayload {
+  email: string;
+  password: string;
+  familyAccount?: string;
+  /** Optional override for demo/testing; in real flow, role comes from the API. */
+  role?: User['role'];
+}
+
 export const authService = {
-  async login(phoneNumber: string): Promise<AuthResponse> {
-    // This is a mock API call
-    // return apiClient.post<AuthResponse>('/auth/login', { phoneNumber });
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Mock success
+  async login(payload: LoginPayload): Promise<AuthResponse> {
+    // Mock API call — real call would be:
+    // return apiClient.post<AuthResponse>('/auth/login', payload);
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
     return {
       user: {
         id: '1',
-        role: 'elder',
-        name: 'Eleanor',
-        phoneNumber,
+        role: payload.role ?? 'family',
+        name: payload.email.split('@')[0] || 'Eleanor',
+        phoneNumber: '',
       },
       token: 'demo-token-xyz',
     };
