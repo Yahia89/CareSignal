@@ -56,13 +56,18 @@ export const NeuButton: React.FC<NeuButtonProps> = ({
       activeOpacity={0.8}
     >
       {loading ? (
-        <ActivityIndicator color={colors.text.inverse} />
+        <ActivityIndicator color={colors.accent.primary} />
       ) : (
         <Text
           style={[
             textStyle,
             {
-              color: variant === 'primary' ? colors.text.inverse : colors.accent.primary,
+              color:
+                isDisabled
+                  ? colors.text.disabled
+                  : variant === 'primary'
+                    ? colors.text.primary
+                    : colors.accent.primary,
             },
           ]}
         >
@@ -74,9 +79,12 @@ export const NeuButton: React.FC<NeuButtonProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Secondary: outlined ghost button — transparent fill, green border, green text.
   secondaryButton: {
-    backgroundColor: colors.surface.light,
+    backgroundColor: 'transparent',
     borderWidth: 2,
     borderColor: colors.accent.primary,
+    shadowOpacity: 0,
+    elevation: 0,
   },
 });

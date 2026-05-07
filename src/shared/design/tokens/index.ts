@@ -8,12 +8,12 @@
 // ============================================================================
 
 export const colors = {
-  // Primary Accent
+  // Primary Accent (CareSignal brand green)
   accent: {
-    primary: '#FF5555',     // Coral red
-    light: '#FF7777',       // Lighter coral
-    dark: '#DD3333',        // Darker coral
-    lighter: '#FFCCCC',     // Very light coral
+    primary: '#4FA72E',     // CareSignal leaf green
+    light: '#6FBE52',       // Lighter green
+    dark: '#3A8F22',        // Darker green
+    lighter: '#DCEFD0',     // Very light green tint (badges, highlights)
   },
 
   // Neutral Grays
@@ -32,28 +32,33 @@ export const colors = {
 
   // Semantic Colors
   semantic: {
-    success: '#4CAF50',
+    success: '#27AE60',     // Slightly deeper success green (status pills)
     warning: '#FFC107',
     error: '#F44336',
     info: '#2196F3',
   },
 
-  // Background & Surface
+  // Background & Surface — neumorphic depth comes from the contrast between these
   background: {
-    light: '#FFFFFF',       // Light mode background
-    dark: '#1A1A1A',        // Dark mode background
+    light: '#EEF1F5',       // Soft blue-gray app background
+    dark: '#1A1A1A',
   },
 
   surface: {
-    light: '#F9F9F9',       // Light mode surface
-    dark: '#2A2A2A',        // Dark mode surface
+    light: '#FFFFFF',       // Cards / raised surfaces (white on top of bg)
+    dark: '#2A2A2A',
   },
 
   text: {
-    primary: '#212121',     // Primary text (light mode)
-    secondary: '#616161',   // Secondary text (light mode)
-    disabled: '#BDBDBD',    // Disabled text
-    inverse: '#FFFFFF',     // Text on dark backgrounds
+    primary: '#1A2138',     // Dark navy (titles, body)
+    secondary: '#64748B',   // Slate-gray (subtitles, captions)
+    disabled: '#BDBDBD',
+    inverse: '#FFFFFF',
+  },
+
+  // Input/border tones
+  border: {
+    light: '#CBD5E1',       // Outlined inputs, dividers
   },
 };
 
@@ -273,17 +278,19 @@ export const components = {
       },
     },
 
+    // Neumorphic raised buttons — same color as the app background, lifted by shadow.
+    // Text color is dark navy; primary accent (green) is reserved for icons/badges/links.
     states: {
       default: {
-        backgroundColor: colors.accent.primary,
+        backgroundColor: colors.background.light,
         shadow: shadows.web.md,
       },
       pressed: {
-        backgroundColor: colors.accent.dark,
-        shadow: shadows.web.md,
+        backgroundColor: colors.neutral[100],
+        shadow: shadows.web.sm,
       },
       disabled: {
-        backgroundColor: colors.neutral[300],
+        backgroundColor: colors.neutral[200],
         shadow: 'none',
       },
     },
