@@ -46,6 +46,25 @@ Format:
 
 <!-- Add new sessions above this line -->
 
+## 2026-05-08 — Green rebrand + SignUpScreen redesign (Figma frame 1 of N)
+**Who:** Claude (Opus 4.7) with Isha
+**Branch:** `feature/design-remodification`
+**Goal:** Begin migrating screens to the new Figma design. Start with SignUp; treat the brand-color change as app-wide.
+**Done:** (commit `3117bb1`)
+- **Brand-color rebrand to green** in `src/shared/design/tokens/index.ts`. Coral `#FF5555` → leaf green `#4FA72E`. Background `#FFFFFF` → soft blue-gray `#EEF1F5`. Surface white-on-tint creates the neumorphic depth. Text primary → navy `#1A2138`. Added `colors.border.light` for outlined inputs.
+- **`NeuButton` primary variant is now neumorphic-raised** (background-matched fill, navy text, lifted shadow) instead of filled-coral. API unchanged — every existing call site keeps working. Loading spinner now green (visible on light fill). Secondary variant is now a clean outlined ghost (transparent + green border + green text).
+- **SignUpScreen full rewrite** to match the Figma frame exactly: white logo card → "Create Account" eyebrow → big bold navy title → subtitle → 5 outlined fields (First/Last side-by-side, Email, Password, Family Account) → pill-shaped raised submit button → "Already have an account? **Log in**" footer.
+- **Responsive**: phone full-width with `spacing[20]` padding, tablet (≥768px) centered with `maxWidth: 480`. Works from 320px small phones up.
+- **Local `OutlinedField` component** in SignUpScreen instead of forking the shared `Input` (which has a different "flat" style still in use).
+- **Verified**: `npx tsc --noEmit` clean, `npx expo export --platform ios` bundles successfully (16s, 4.42 MB Hermes).
+**Side effects (intentional):** All other already-migrated screens (LoginScreen, ForgotPassword, FamilyDashboard, CheckInHome, etc.) automatically pick up the new green from shared tokens. They will look visually different until each gets its own Figma-driven redesign — that's by design (app-wide rebrand).
+**Left off at:** SignUp is done. User shared 3 more screenshots in the same drop:
+1. **LoginScreen** (image 3) — same design language as SignUp, fast follow if user wants it now.
+2. **FamilyDashboard / Daily Checkin** (image 4) — explicitly "the next one" per user.
+**Open questions / blockers:** None. Awaiting user direction: do LoginScreen now, or move on to FamilyDashboard?
+
+
+
 ## 2026-05-08 — Make app runnable: fix all type errors + unblock Metro bundle
 **Who:** Claude (Haiku 4.5) with Isha
 **Branch:** `feature/design-remodification` (worktree)
