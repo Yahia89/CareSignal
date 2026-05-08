@@ -192,8 +192,9 @@ const styles = StyleSheet.create({
     paddingRight: spacing[24],
     paddingBottom: spacing[24],
     paddingLeft: spacing[24],
-    minHeight: 121,
-    justifyContent: 'center',
+    height: 121, // exact Figma frame height (not minHeight)
+    // Logo sits at top-left per Figma padding (11/24/24/24); the empty
+    // space below is intentional — see the Figma frame.
   },
   logo: {
     width: 167,

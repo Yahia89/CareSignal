@@ -116,19 +116,22 @@ export const SignUpScreen = () => {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
-          ]}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
+            {/* Logo card spans the full screen width on phone — matches the
+                Figma 390×121 frame which has no horizontal margin. */}
             <LogoCard />
 
-            <Spacer y="xl" />
+            <Spacer y="lg" /> {/* ~24px, Figma gap=26 */}
 
-            <Text style={styles.eyebrow}>Create Account</Text>
+            {/* Form section is inset 24px on phone (Figma form rows are 324
+                wide inside a 390-wide screen → 33px each side, but Figma
+                uses 24 — keeping 24 as the brand spacing). */}
+            <View style={styles.formInset}>
+              <Text style={styles.eyebrow}>Create Account</Text>
             <Spacer y="sm" />
             <Text style={styles.title}>Sign up for Care Signal</Text>
             <Spacer y="sm" />
@@ -226,6 +229,7 @@ export const SignUpScreen = () => {
               <Text style={styles.footerText}>Already have an account? </Text>
               <Text style={styles.footerLink}>Log in</Text>
             </TouchableOpacity>
+            </View> {/* /formInset */}
           </View>
 
           <Spacer y="xxl" />
@@ -240,8 +244,11 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? spacing[16] : spacing[24],
     paddingBottom: spacing[48],
   },
+  // The outer constrain centers + caps width on tablet. Card extends to
+  // the full constrain width; form section adds 24px horizontal inset.
   constrain: { width: '100%', alignSelf: 'center' },
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
+  formInset: { paddingHorizontal: spacing[24] },
 
   // Eyebrow + subtitle — exact Figma values: 14/400/#333333, lh 16.6
   eyebrow: { fontSize: 14, lineHeight: 16.6, fontWeight: '400', color: '#333333' },
