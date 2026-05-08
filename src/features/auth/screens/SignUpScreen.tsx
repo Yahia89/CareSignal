@@ -14,7 +14,12 @@ import { Screen, Spacer } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { NeuButton, useColors, spacing, borderRadius, colors as staticColors } from '../../../shared/design';
 import { authService } from '../services/authService';
-import { LogoCard, OutlinedField } from '../components';
+import { LogoCard, OutlinedField, OutlinedSelect } from '../components';
+
+const ACCOUNT_TYPE_OPTIONS = [
+  { label: 'Family Account', value: 'family' },
+  { label: 'Senior Account', value: 'elder' },
+];
 
 const FORM_MAX_WIDTH = 480;
 const TABLET_BREAKPOINT = 768;
@@ -32,7 +37,6 @@ export const SignUpScreen = () => {
     lastName: '',
     email: '',
     password: '',
-    familyAccount: '',
     role: 'family',
   });
 
@@ -115,12 +119,12 @@ export const SignUpScreen = () => {
               editable={!loading}
             />
 
-            <OutlinedField
+            <OutlinedSelect
+              options={ACCOUNT_TYPE_OPTIONS}
+              value={formData.role}
+              onValueChange={(v) => setFormData({ ...formData, role: v })}
               placeholder="Family Account"
-              value={formData.familyAccount}
-              onChangeText={(v) => setFormData({ ...formData, familyAccount: v })}
-              autoCapitalize="none"
-              editable={!loading}
+              disabled={loading}
             />
 
             <Spacer y="md" />
