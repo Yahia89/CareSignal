@@ -1,52 +1,39 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Image, Text } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, Text } from 'react-native';
+import { HeartPulse, Wifi } from 'lucide-react-native';
 import { colors, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
-import { CARESIGNAL_LOGO_DATA_URI } from './logoData';
 
 /**
  * White rounded "CareSignal by MedTech Care" card used at the top of the
  * auth screens.
  *
- * Logo source strategy: try `require('../../assets/...png')` first (bundled
- * asset, fast). If that fails (e.g. asset registry was stale at compile
- * time), fall back to the inlined base64 data URI so the user always sees
- * a logo regardless of build state. If both fail, render a labelled
- * placeholder so debugging is obvious.
+ * Implementation: rendered programmatically using lucide-react-native icons
+ * + <Text>. Earlier attempts with require() of a PNG and an inlined base64
+ * data URI both failed silently on the user's Android dev build (likely a
+ * native asset-registry mismatch from the originally-built APK). Vector
+ * icons + text always render — no asset registry, no data-URI parser.
+ *
+ * When the team wants the exact custom logo from Figma, replace this entire
+ * View tree with `<Image source={require('.../caresignal-logo.png')} />`
+ * once the dev APK is rebuilt with the asset present at compile time.
  */
-const REQUIRED_LOGO = require('../../../../assets/caresignal-logo.png');
+export const LogoCard = () => (
+  <View style={styles.card}>
+    <View style={styles.row}>
+      <View style={styles.iconWrap}>
+        <HeartPulse size={36} color={colors.accent.primary} strokeWidth={2.5} fill={colors.accent.primary} />
+        <View style={styles.signalWrap} pointerEvents="none">
+          <Wifi size={14} color={colors.accent.primary} strokeWidth={2.5} />
+        </View>
+      </View>
 
-export const LogoCard = () => {
-  const [stage, setStage] = useState<'require' | 'datauri' | 'failed'>('require');
-
-  const source =
-    stage === 'require'
-      ? REQUIRED_LOGO
-      : stage === 'datauri'
-        ? { uri: CARESIGNAL_LOGO_DATA_URI }
-        : null;
-
-  return (
-    <View style={styles.card}>
-      {source ? (
-        <Image
-          source={source}
-          style={styles.logo}
-          resizeMode="contain"
-          onError={(e) => {
-            // eslint-disable-next-line no-console
-            console.warn(
-              `LogoCard: ${stage} source failed —`,
-              e.nativeEvent?.error ?? '(no error message)'
-            );
-            setStage(stage === 'require' ? 'datauri' : 'failed');
-          }}
-        />
-      ) : (
-        <Text style={styles.fallback}>CareSignal logo failed to load</Text>
-      )}
+      <View style={styles.textWrap}>
+        <Text style={styles.wordmark}>CareSignal</Text>
+        <Text style={styles.tagline}>by MedTech Care</Text>
+      </View>
     </View>
-  );
-};
+  </View>
+);
 
 const styles = StyleSheet.create({
   card: {
@@ -55,16 +42,42 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[16],
     paddingHorizontal: spacing[20],
     ...getShadowStyle('md'),
-    minHeight: 78, // 46 (logo) + 32 (vertical padding)
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconWrap: {
+    width: 44,
+    height: 40,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  logo: {
-    width: 167,
-    height: 46,
+  // Small "wifi" rotated 45° so the arcs visually radiate from the upper-
+  // right of the heart — closest no-dependency approximation of the Figma
+  // logo's signal lines.
+  signalWrap: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    transform: [{ rotate: '45deg' }],
   },
-  fallback: {
-    color: colors.semantic.error,
-    fontSize: 14,
-    textAlign: 'center',
+  textWrap: {
+    marginLeft: spacing[12],
+    flexShrink: 1,
+  },
+  wordmark: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.accent.primary,
+    letterSpacing: 0.1,
+    lineHeight: 26,
+  },
+  tagline: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.text.primary,
+    marginTop: 2,
+    letterSpacing: 0.6,
   },
 });
