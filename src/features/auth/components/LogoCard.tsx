@@ -16,6 +16,10 @@ export const LogoCard = () => (
       source={require('../../../../assets/caresignal-logo.png')}
       style={styles.logo}
       resizeMode="contain"
+      onError={(e) =>
+        // eslint-disable-next-line no-console
+        console.warn('LogoCard image failed to load:', e.nativeEvent?.error)
+      }
     />
   </View>
 );
