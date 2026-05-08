@@ -46,6 +46,23 @@ Format:
 
 <!-- Add new sessions above this line -->
 
+## 2026-05-08 — Auth screens to exact Figma values + real logo asset
+**Who:** Claude (Opus 4.7) with Isha
+**Branch:** `feature/design-remodification`
+**Goal:** Stop eyeballing — apply the values Isha pulled from Figma's right panel directly.
+**Done:** (commit `ad9fdf2`)
+- Saved the real CareSignal logo as `assets/caresignal-logo.png` (decoded from the base64 inside the SVG export). LogoCard now renders the PNG via `<Image>` instead of stacking Lucide icons. Drops the wordmark/tagline `<Text>` since they're baked into the asset.
+- Updated tokens to the exact Figma colors: `text.primary` → `#36597D`, added `text.placeholder = #A6B1C3`, `border.light → #8D98A7`, new `inputFill.light = #F1F5F9`. Added `fontSize.title = 23` and `fontSize.field = 15`.
+- `OutlinedField` + `OutlinedSelect` height 52 → **41**, radius 12 → **8**, fill transparent → **#F1F5F9**, placeholder color → **#A6B1C3**, value font 16 → **15**.
+- Title 30/900 → **23/700**, lh 100%, letter-spacing 0, color **#36597D**. Subtitle/eyebrow → 15/400/`#36597D`.
+- Phone screen padding 20 → **24**.
+- All values documented in MEMORY.md "Design system: exact Figma values" so the colleague has a single source of truth.
+- Verified: tsc + iOS Metro bundle clean.
+**Open gap:** Font family. Figma uses **Segoe UI** which we don't bundle. Currently the OS default kicks in (SF Pro / Roboto). To close this visually we need to either license Segoe UI or load Inter via `expo-font`. Documented in MEMORY.md.
+**Left off at:** Auth screens are now matched to the documented Figma values. Awaiting Isha's review on the simulator.
+
+
+
 ## 2026-05-08 — Fix "No access token received" login bug + align with real API
 **Who:** Claude (Opus 4.7) with Isha
 **Branch:** `feature/design-remodification`

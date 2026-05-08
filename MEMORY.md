@@ -75,6 +75,44 @@ Import the notification hooks by full path (`~/shared/notifications/hooks/useReg
 
 ---
 
+## Design system: exact Figma values (Med-Tech-Care)
+
+Source: Isha's Figma export, 2026-05-08.
+
+### Colors
+| Role | Hex | Token |
+|---|---|---|
+| Brand green | `#4FA72E` | `colors.accent.primary` |
+| Title / body navy | `#36597D` | `colors.text.primary` |
+| Placeholder gray | `#A6B1C3` | `colors.text.placeholder` |
+| Input border | `#8D98A7` | `colors.border.light` |
+| Input fill | `#F1F5F9` | `colors.inputFill.light` |
+| Page background | `#EEF1F5` | `colors.background.light` |
+| Card / surface | `#FFFFFF` | `colors.surface.light` |
+| Success (OK pill) | `#27AE60` | `colors.semantic.success` |
+
+### Typography
+- **Font family**: Figma uses **Segoe UI** (Microsoft-licensed). RN doesn't have a fallback chain on `fontFamily`, and we don't bundle Segoe UI. Currently `typography.fontFamily.default = undefined` — OS default kicks in (SF Pro on iOS, Roboto on Android). For the exact Figma rendering, install `expo-font` + Inter (free, very close) or license Segoe UI directly. **This is the largest remaining visual gap.**
+- **Title** ("Sign up for Care Signal" / "Login for Care Signal"): 23px / weight 700 / lh 100% / letter-spacing 0 / color `#36597D`.
+- **Eyebrow** ("Create Account"): 15px / 400 / `#36597D`.
+- **Subtitle**: 15px / 400 / `#36597D`.
+- **Field placeholder + value**: 15px / 400 / `#A6B1C3` placeholder, `#36597D` filled.
+
+### Inputs (`OutlinedField` / `OutlinedSelect`)
+- Height **41px** (not 52).
+- Border radius **8** (`borderRadius.sm`).
+- 1px `#8D98A7` border, fill `#F1F5F9`, padding 16 horizontal.
+
+### Layout
+- Phone screen padding: **24px** left/right (`spacing[24]`).
+- Heading block gap (eyebrow → title → subtitle): **8px** (`Spacer y="xs"`).
+- Logo card: 167×46 inner image, padding 16 vertical / 20 horizontal, radius 16.
+
+### When you have new values from Figma
+1. Add the hex/size to the closest token in `src/shared/design/tokens/index.ts`.
+2. If it's screen-specific (one-off), set inline.
+3. If it's a new shared concept (e.g. "tag pill"), add a new token and document it in this section.
+
 ## Conventions
 
 ### Path imports
