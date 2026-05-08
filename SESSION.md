@@ -46,6 +46,27 @@ Format:
 
 <!-- Add new sessions above this line -->
 
+## 2026-05-08 — Fix "No access token received" login bug + align with real API
+**Who:** Claude (Opus 4.7) with Isha
+**Branch:** `feature/design-remodification`
+**Goal:** Diagnose and fix the user's login error. Their account was created and email-confirmed, but `authService.login` was throwing "No access token received from login".
+**Root cause:** The CareSignal API wraps every response in `{ data, error }`. We were treating `response.data` as the inner Session — so `access_token` was actually at `response.data.data.access_token`, always undefined at the level we read it.
+**Done:** (commit `23091f9`)
+- **Verified the contract** by pulling the OpenAPI spec from `https://carsignal-api.vercel.app/api/docs` (the page at `/docs` is a Swagger UI shell; the real spec is at `/api/docs`).
+- **`src/types.ts` rewritten** to match the spec: new `ApiEnvelope<T>`, `Session` (with `refresh_token` + `expires_in`), `Profile`, `ApiUser`, `VerifyEmailPayload`. `UserRole` corrected to `'senior' | 'family'` (was `'senior' | 'caregiver' | 'admin'` — `'caregiver'` would have been rejected by the signup endpoint).
+- **`auth.service.ts` rewritten** with an `unwrap<T>(envelope)` helper that returns `envelope.data` on success and throws `envelope.error` as a plain Error otherwise. All seven auth endpoints go through it.
+- **New `authService.getProfile()` → `GET /profiles/me`** because Session.user only carries `{ id, email }`. Name + role live on the Profile resource.
+- **`AuthContext.finalizeAuth` rewired**: setAuthToken → getProfile → build app User from profile → setRefreshToken → setUser → schedule refresh → dispatch LOGIN. On profile-fetch failure, partial auth is rolled back via `storage.clear()` so we never leave a token without a usable user.
+- **Refresh token now persisted** on initial login (was previously only set on the refresh endpoint, leaving the very first refresh impossible).
+- **`roleMapping`** corrected: UI `'family'` → API `'family'` (was `'caregiver'`).
+- **Email-verification endpoint typed**: `authService.verifyEmail({ token_hash, type })` targeting `POST /auth/verify-email`. Not wired to a deep-link handler yet — the user worked around it by clicking the email's web link — but the service is ready when the deep-link work happens.
+- **Stale duplicates deleted** (long-flagged in MEMORY.md): `src/contexts/AuthContext.tsx`, `src/hooks/useAuth.ts`, and the orphaned `src/screens/` example dir.
+- **Verified**: tsc clean, iOS Metro bundle clean.
+**Left off at:** The user should retry login — the "No access token received" error is fixed, and the full login → profile-fetch → navigation flow is now wired to the real API. Daily Checkin / FamilyDashboard redesign still pending whenever they paste the production frame.
+**Open questions / blockers:** Not actually exercised against the live backend from this session — code-level verification only. If login still fails after the user retries, the Network tab in dev tools or the API's error-text in the inline submit error will tell us what next.
+
+
+
 ## 2026-05-08 — Wire auth screens to real API + shared form validation
 **Who:** Claude (Opus 4.7) with Isha
 **Branch:** `feature/design-remodification`

@@ -108,8 +108,15 @@ if (!valid) return setErrors(errors);
 ```
 Validators are composable (`Validator<T>` returns `string | null`) and pure — pair them with `OutlinedField`'s `error` prop for the red-border + message UX.
 
+### CareSignal API contract
+Every endpoint returns `{ data, error }`. Use `auth.service`'s `unwrap()` helper (or write your own if you add a new service) — never read `response.data.X` directly. Throwing on `error !== null` lets screens surface the API's own error string.
+
+OpenAPI spec is at `https://carsignal-api.vercel.app/api/docs` (the page at `/docs` is a Swagger UI shell; the JSON lives at `/api/docs`).
+
+Login/signup return a `Session = { access_token, refresh_token, expires_in, user: { id, email } }`. **Name and role come from a separate `GET /profiles/me`** — Session.user is intentionally minimal. `AuthContext.finalizeAuth` does the profile fetch + token storage in the right order; reuse it, don't reinvent.
+
 ### Auth role at the API boundary
-Use `~/features/auth/services/roleMapping`: `uiRoleToApi(role)` before calling `signup`, never inline the mapping in screens. UI uses `'family' | 'elder'`; API uses `'senior' | 'caregiver' | 'admin'`. Don't drift either side.
+Use `~/features/auth/services/roleMapping`: `uiRoleToApi(role)` before calling `signup`, never inline the mapping in screens. UI uses `'family' | 'elder'`; API uses `'senior' | 'family'` (per the OpenAPI spec — NOT `'caregiver'`). Mapping is now `UI 'elder' ↔ API 'senior'`, `UI 'family' ↔ API 'family'`.
 
 ### `AuthContext.login` / `signup` return shape
 Both return `AuthResult = { ok: true } | { ok: false, error: string }`. Check `result.ok` and render `result.error` locally. Don't subscribe to `state.error` from the screen — local rendering is cleaner and avoids stale-error glitches when navigating away and back.
@@ -118,6 +125,9 @@ Both return `AuthResult = { ok: true } | { ok: false, error: string }`. Check `r
 
 - [x] ~~CheckInHome.tsx legacy imports~~ — fixed 2026-05-08 (commit `1a9fc08`)
 - [x] ~~Two API clients~~ — deleted `src/shared/api/` 2026-05-08 (was an unused fetch stub)
+- [x] ~~Two `AuthContext` files~~ — deleted `src/contexts/AuthContext.tsx` and `src/hooks/useAuth.ts` 2026-05-08
+- [x] ~~Two User/Role types~~ — `src/types.ts` is now spec-accurate; `src/shared/types/domain.ts` UI-side mapping is in `roleMapping`
+- [x] ~~Orphaned `src/screens/`~~ example dir — deleted 2026-05-08
 - [ ] **SignUpScreen.tsx line 20**: still imports `colors` from `~/shared/design` and shadows it with `useColors()` on line 26. The static `colors` *is* used by the module-scope StyleSheet, so this is intentional now — but the dual usage is fragile. Consider splitting into `staticColors` + `colors`.
 - [ ] **Two `AuthContext` files**: delete `src/contexts/AuthContext.tsx` once nothing imports it.
 - [ ] **Two User/Role types**: long-term, pick one. Short-term, the mapping in `AuthContext` (`'senior' → 'elder'`) is the contract.
