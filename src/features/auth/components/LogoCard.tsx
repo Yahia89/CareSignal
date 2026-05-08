@@ -1,19 +1,25 @@
 import React from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { colors, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
+import { CARESIGNAL_LOGO_DATA_URI } from './logoData';
 
 /**
  * White rounded "CareSignal by MedTech Care" card used at the top of the
  * auth screens.
  *
- * The whole logo (heart + EKG + signal arcs + wordmark + tagline) is one
- * PNG asset exported from Figma. Original asset is 489×135 (≈3.62:1).
- * We render at 167×46 — the size shown in the Figma frame.
+ * The logo is inlined as a base64 data URI (see logoData.ts). We intentionally
+ * skip the `require('../assets/...png')` path because Metro registers asset
+ * URIs at build time, so adding a new asset to a previously-built dev APK
+ * leaves the require() returning a stale "not found" reference until you
+ * rebuild. Inline data URIs sidestep the registry entirely.
+ *
+ * Original asset is 489×135. We render at 167×46 — the size from the Figma
+ * frame. resizeMode="contain" preserves the aspect ratio.
  */
 export const LogoCard = () => (
   <View style={styles.card}>
     <Image
-      source={require('../../../../assets/caresignal-logo.png')}
+      source={{ uri: CARESIGNAL_LOGO_DATA_URI }}
       style={styles.logo}
       resizeMode="contain"
       onError={(e) =>

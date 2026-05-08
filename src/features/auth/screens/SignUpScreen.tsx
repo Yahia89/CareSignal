@@ -129,9 +129,9 @@ export const SignUpScreen = () => {
             <Spacer y="xl" />
 
             <Text style={styles.eyebrow}>Create Account</Text>
-            <Spacer y="xs" />
+            <Spacer y="sm" />
             <Text style={styles.title}>Sign up for Care Signal</Text>
-            <Spacer y="xs" />
+            <Spacer y="sm" />
             <Text style={styles.subtitle}>
               Family-Side access for alert controls and senior monitoring
             </Text>
