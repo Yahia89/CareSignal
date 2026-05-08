@@ -116,7 +116,10 @@ export const SignUpScreen = () => {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -125,8 +128,7 @@ export const SignUpScreen = () => {
 
             <Spacer y="lg" />
 
-            <View style={styles.formInset}>
-              <Text style={styles.eyebrow}>Create Account</Text>
+            <Text style={styles.eyebrow}>Create Account</Text>
             <Spacer y="sm" />
             <Text style={styles.title}>Sign up for Care Signal</Text>
             <Spacer y="sm" />
@@ -224,7 +226,6 @@ export const SignUpScreen = () => {
               <Text style={styles.footerText}>Already have an account? </Text>
               <Text style={styles.footerLink}>Log in</Text>
             </TouchableOpacity>
-            </View>
           </View>
 
           <Spacer y="xxl" />
@@ -236,14 +237,13 @@ export const SignUpScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingTop: Platform.OS === 'ios' ? spacing[16] : spacing[24],
+    // Visible gap between safe-area top and the LogoCard, matches the
+    // Figma layout where there's background showing above the card.
+    paddingTop: spacing[24],
     paddingBottom: spacing[48],
   },
-  // The outer constrain centers + caps width on tablet. Card extends to
-  // the full constrain width; form section adds 24px horizontal inset.
   constrain: { width: '100%', alignSelf: 'center' },
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
-  formInset: { paddingHorizontal: spacing[24] },
 
   // Eyebrow + subtitle — exact Figma values: 14/400/#333333, lh 16.6
   eyebrow: { fontSize: 14, lineHeight: 16.6, fontWeight: '400', color: '#333333' },

@@ -96,7 +96,10 @@ export const LoginScreen = () => {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -105,8 +108,7 @@ export const LoginScreen = () => {
 
             <Spacer y="lg" />
 
-            <View style={styles.formInset}>
-              <Text style={styles.title}>Login for Care Signal</Text>
+            <Text style={styles.title}>Login for Care Signal</Text>
             <Spacer y="sm" />
             <Text style={styles.subtitle}>
               Family-Side access for alert controls and senior monitoring
@@ -179,7 +181,6 @@ export const LoginScreen = () => {
               <Text style={styles.footerText}>Don’t have an account? </Text>
               <Text style={styles.footerLink}>Sign up</Text>
             </TouchableOpacity>
-            </View>
           </View>
 
           <Spacer y="xxl" />
@@ -191,12 +192,11 @@ export const LoginScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingTop: Platform.OS === 'ios' ? spacing[16] : spacing[24],
+    paddingTop: spacing[24],
     paddingBottom: spacing[48],
   },
   constrain: { width: '100%', alignSelf: 'center' },
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
-  formInset: { paddingHorizontal: spacing[24] },
 
   // Title — exact Figma: 23/700/#36597D, lh 100%
   title: {
