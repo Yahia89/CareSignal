@@ -101,12 +101,12 @@ export const OutlinedSelect = ({
 const styles = StyleSheet.create({
   outer: { marginBottom: spacing[12] },
   wrap: {
+    height: 41,
     borderWidth: 1,
     borderColor: colors.border.light,
-    backgroundColor: 'transparent',
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.inputFill.light,
+    borderRadius: borderRadius.sm,
     paddingHorizontal: spacing[16],
-    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -119,8 +119,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.semantic.error,
   },
-  value: { fontSize: 16, color: colors.text.primary, flex: 1 },
-  placeholder: { fontSize: 16, color: colors.text.secondary, flex: 1 },
+  value: { fontSize: 15, color: colors.text.primary, flex: 1 },
+  placeholder: { fontSize: 15, color: colors.text.placeholder, flex: 1 },
 
   overlay: {
     flex: 1,

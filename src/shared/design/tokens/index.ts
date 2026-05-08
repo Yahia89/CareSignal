@@ -50,15 +50,23 @@ export const colors = {
   },
 
   text: {
-    primary: '#1A2138',     // Dark navy (titles, body)
+    primary: '#36597D',     // Dark slate-navy (titles, body) — exact Figma value
     secondary: '#64748B',   // Slate-gray (subtitles, captions)
+    placeholder: '#A6B1C3', // Outlined-field placeholder color (exact Figma)
     disabled: '#BDBDBD',
     inverse: '#FFFFFF',
   },
 
   // Input/border tones
   border: {
-    light: '#CBD5E1',       // Outlined inputs, dividers
+    light: '#8D98A7',       // Outlined input border (exact Figma)
+    subtle: '#CBD5E1',      // Generic dividers
+  },
+
+  // Input fill (light blue-tint, exact Figma)
+  inputFill: {
+    light: '#F1F5F9',
+    dark: '#1E293B',
   },
 };
 
@@ -224,17 +232,25 @@ export const borderRadius = {
 // ============================================================================
 
 export const typography = {
+  // Figma uses "Segoe UI". Microsoft licenses it — we don't bundle it.
+  // RN's `fontFamily` only takes one name (no fallback chain), so on devices
+  // that don't have it (= every iOS device, most Androids), we let
+  // fontFamily be undefined and the OS default kicks in (SF Pro / Roboto).
+  // To get the exact Figma rendering: add expo-font + Inter (free, very
+  // close to Segoe UI) or license Segoe UI directly. See MEMORY.md.
   fontFamily: {
-    default: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    mono: '"Courier New", Courier, monospace',
+    default: undefined as string | undefined,
+    mono: 'Courier New',
   },
 
   fontSize: {
     xs: 12,
     sm: 14,
+    field: 15,    // Figma field placeholder + label
     base: 16,
     lg: 18,
     xl: 20,
+    title: 23,    // Figma "Sign up for Care Signal" / "Login for Care Signal"
     '2xl': 24,
     '3xl': 28,
     '4xl': 32,

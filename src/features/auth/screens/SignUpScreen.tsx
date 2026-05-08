@@ -118,7 +118,7 @@ export const SignUpScreen = () => {
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingHorizontal: isTablet ? spacing[32] : spacing[20] },
+            { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -131,7 +131,7 @@ export const SignUpScreen = () => {
             <Text style={styles.eyebrow}>Create Account</Text>
             <Spacer y="xs" />
             <Text style={styles.title}>Sign up for Care Signal</Text>
-            <Spacer y="sm" />
+            <Spacer y="xs" />
             <Text style={styles.subtitle}>
               Family-Side access for alert controls and senior monitoring
             </Text>
@@ -243,19 +243,21 @@ const styles = StyleSheet.create({
   constrain: { width: '100%', alignSelf: 'center' },
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
 
-  eyebrow: { fontSize: 14, fontWeight: '500', color: staticColors.text.primary },
+  // Eyebrow / title / subtitle — exact Figma values:
+  // title is 23/700/#36597D, lh 100% (= 23). Eyebrow + subtitle 15/400.
+  eyebrow: { fontSize: 15, fontWeight: '400', color: staticColors.text.primary, lineHeight: 18 },
   title: {
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: '900',
+    fontSize: 23,
+    lineHeight: 26,         // ~100% but +3 for descender breathing room
+    fontWeight: '700',
     color: staticColors.text.primary,
-    letterSpacing: -0.3,
+    letterSpacing: 0,
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
+    fontWeight: '400',
     color: staticColors.text.primary,
-    opacity: 0.78,
   },
 
   nameRow: { flexDirection: 'row', alignItems: 'flex-start' },

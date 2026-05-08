@@ -98,7 +98,7 @@ export const LoginScreen = () => {
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingHorizontal: isTablet ? spacing[32] : spacing[20] },
+            { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -198,18 +198,19 @@ const styles = StyleSheet.create({
   constrain: { width: '100%', alignSelf: 'center' },
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
 
+  // Title / subtitle — exact Figma values
   title: {
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: '900',
+    fontSize: 23,
+    lineHeight: 26,
+    fontWeight: '700',
     color: staticColors.text.primary,
-    letterSpacing: -0.3,
+    letterSpacing: 0,
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
+    fontWeight: '400',
     color: staticColors.text.primary,
-    opacity: 0.78,
   },
 
   submitError: {

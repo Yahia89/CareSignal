@@ -9,13 +9,17 @@ import {
   ViewStyle,
   StyleProp,
 } from 'react-native';
-import { spacing, borderRadius, colors } from '../../../shared/design';
+import { spacing, borderRadius, colors, typography } from '../../../shared/design';
 
 /**
- * Outlined text field used by the new auth screens (Login / SignUp).
+ * Outlined text field used by the auth screens.
  *
- * Visual: transparent fill, light gray border, navy text, gray placeholder.
- * Pass `error` to switch to an error state (red border + message below).
+ * Exact Figma values (Med-Tech-Care):
+ *   - Height 41, border 1px #8D98A7, radius 8
+ *   - Fill #F1F5F9 (subtle blue-tint, NOT transparent)
+ *   - Placeholder: Segoe UI 400 / 15px / #A6B1C3
+ *
+ * `error` prop turns the border red and shows a 12px message below.
  */
 export type OutlinedFieldProps = TextInputProps & {
   error?: string | undefined;
@@ -27,7 +31,7 @@ export const OutlinedField = ({ error, containerStyle, style, ...props }: Outlin
     <View style={[styles.wrap, error ? styles.wrapError : null]}>
       <TextInput
         {...props}
-        placeholderTextColor={colors.text.secondary}
+        placeholderTextColor={colors.text.placeholder}
         style={[styles.input, style]}
       />
     </View>
@@ -38,19 +42,21 @@ export const OutlinedField = ({ error, containerStyle, style, ...props }: Outlin
 const styles = StyleSheet.create({
   outer: { marginBottom: spacing[12] },
   wrap: {
+    height: 41,
     borderWidth: 1,
     borderColor: colors.border.light,
-    backgroundColor: 'transparent',
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.inputFill.light,
+    borderRadius: borderRadius.sm,
     paddingHorizontal: spacing[16],
-    minHeight: 52,
     justifyContent: 'center',
   },
   wrapError: { borderColor: colors.semantic.error },
   input: {
-    fontSize: 16,
+    fontSize: typography.fontSize.field,
+    fontWeight: '400',
     color: colors.text.primary,
-    paddingVertical: Platform.OS === 'ios' ? spacing[12] : spacing[8],
+    fontFamily: typography.fontFamily.default,
+    padding: 0, // RN Android adds 4px default; kill it so 15px text is centered in a 41px box
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
   errorText: {
