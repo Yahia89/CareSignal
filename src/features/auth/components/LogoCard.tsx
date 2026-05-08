@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Image, Text, Platform } from 'react-native';
-import { File, Paths } from 'expo-file-system';
+// Use the legacy File API — it has explicit base64-decoding via
+// EncodingType.Base64 that's known-good across SDK versions. The new
+// SDK 54 File.write(Uint8Array) was producing files Glide rejected
+// with "Problem decoding into existing bitmap".
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const LegacyFS: typeof import('expo-file-system/build/legacy/FileSystem') = require('expo-file-system/legacy');
 import { HeartPulse, Wifi } from 'lucide-react-native';
 import { colors, spacing, borderRadius } from '../../../shared/design';
 import { CARESIGNAL_LOGO_DATA_URI } from './logoData';
@@ -19,22 +24,6 @@ const LOGO_FILE_NAME = 'caresignal-logo.png';
  * decoder. file:// URIs go through the standard image pipeline — most
  * reliable.
  */
-/**
- * Decode a base64 string to raw bytes. Avoids relying on `File.write`'s
- * `encoding: 'base64'` option, which on Android Glide produced "Problem
- * decoding into existing bitmap" — likely because the option wrote the
- * base64 *text* to disk rather than its decoded bytes.
- */
-function base64ToUint8Array(b64: string): Uint8Array {
-  // atob is available in Hermes / RN out of the box.
-  const binary = global.atob ? global.atob(b64) : Buffer.from(b64, 'base64').toString('binary');
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
 function useLogoFileUri(): { uri: string | null; failed: boolean } {
   const [uri, setUri] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -43,25 +32,29 @@ function useLogoFileUri(): { uri: string | null; failed: boolean } {
     let cancelled = false;
     (async () => {
       try {
-        const file = new File(Paths.cache, LOGO_FILE_NAME);
+        const cacheDir = LegacyFS.cacheDirectory;
+        if (!cacheDir) throw new Error('No cache directory available');
+        const path = cacheDir + LOGO_FILE_NAME;
 
-        // Always rewrite to be safe — if a previous attempt wrote the
-        // base64 *text* (which produces a non-decodable bitmap), the
-        // file would already exist with bad content. Cheap operation.
+        // Strip the "data:image/png;base64," prefix so we pass only the
+        // raw base64 payload to writeAsStringAsync.
         const idx = CARESIGNAL_LOGO_DATA_URI.indexOf(',');
         const b64 = idx >= 0 ? CARESIGNAL_LOGO_DATA_URI.slice(idx + 1) : CARESIGNAL_LOGO_DATA_URI;
-        const bytes = base64ToUint8Array(b64);
 
-        if (file.exists) {
-          file.delete();
-        }
-        file.create();
-        file.write(bytes);
+        // Always rewrite — covers the case where a previous attempt left
+        // a bad/partial file at the same path.
+        await LegacyFS.writeAsStringAsync(path, b64, {
+          encoding: 'base64' as any,
+        });
 
-        // Cache-bust the URI so Glide doesn't serve a previously-failed
-        // bitmap from its in-memory cache.
-        const bustedUri = `${file.uri}?v=${Date.now()}`;
-        if (!cancelled) setUri(bustedUri);
+        // Sanity-check that the bytes actually landed (8927 = original PNG)
+        const info = await LegacyFS.getInfoAsync(path);
+        // eslint-disable-next-line no-console
+        console.log(
+          `LogoCard: wrote ${info.exists ? (info as any).size : '?'} bytes to ${path}`
+        );
+
+        if (!cancelled) setUri(path);
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn('LogoCard: failed to materialize logo file —', err);
