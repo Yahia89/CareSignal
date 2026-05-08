@@ -19,6 +19,22 @@ const LOGO_FILE_NAME = 'caresignal-logo.png';
  * decoder. file:// URIs go through the standard image pipeline — most
  * reliable.
  */
+/**
+ * Decode a base64 string to raw bytes. Avoids relying on `File.write`'s
+ * `encoding: 'base64'` option, which on Android Glide produced "Problem
+ * decoding into existing bitmap" — likely because the option wrote the
+ * base64 *text* to disk rather than its decoded bytes.
+ */
+function base64ToUint8Array(b64: string): Uint8Array {
+  // atob is available in Hermes / RN out of the box.
+  const binary = global.atob ? global.atob(b64) : Buffer.from(b64, 'base64').toString('binary');
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 function useLogoFileUri(): { uri: string | null; failed: boolean } {
   const [uri, setUri] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -28,15 +44,24 @@ function useLogoFileUri(): { uri: string | null; failed: boolean } {
     (async () => {
       try {
         const file = new File(Paths.cache, LOGO_FILE_NAME);
-        if (!file.exists) {
-          // logoData.ts holds "data:image/png;base64,XXXX"; strip the prefix
-          // before writing, since `write` with encoding:'base64' wants the
-          // raw base64 payload only.
-          const idx = CARESIGNAL_LOGO_DATA_URI.indexOf(',');
-          const b64 = idx >= 0 ? CARESIGNAL_LOGO_DATA_URI.slice(idx + 1) : CARESIGNAL_LOGO_DATA_URI;
-          file.write(b64, { encoding: 'base64' });
+
+        // Always rewrite to be safe — if a previous attempt wrote the
+        // base64 *text* (which produces a non-decodable bitmap), the
+        // file would already exist with bad content. Cheap operation.
+        const idx = CARESIGNAL_LOGO_DATA_URI.indexOf(',');
+        const b64 = idx >= 0 ? CARESIGNAL_LOGO_DATA_URI.slice(idx + 1) : CARESIGNAL_LOGO_DATA_URI;
+        const bytes = base64ToUint8Array(b64);
+
+        if (file.exists) {
+          file.delete();
         }
-        if (!cancelled) setUri(file.uri);
+        file.create();
+        file.write(bytes);
+
+        // Cache-bust the URI so Glide doesn't serve a previously-failed
+        // bitmap from its in-memory cache.
+        const bustedUri = `${file.uri}?v=${Date.now()}`;
+        if (!cancelled) setUri(bustedUri);
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn('LogoCard: failed to materialize logo file —', err);
