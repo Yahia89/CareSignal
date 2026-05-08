@@ -155,26 +155,25 @@ const ProgrammaticLogo = () => (
 const bottomShadowColor = '#C9D9E8';
 
 const styles = StyleSheet.create({
-  // No card background — page bg shows through. Subtle bottom-only shadow
-  // approximates the Figma's faint horizontal line below the logo region.
-  // iOS: native shadow API can be configured to drop only downward.
-  // Android: elevation can't be directional — fall back to a 1px hairline
-  // border on the bottom which is visually equivalent for our subtle case.
+  // No card background — page bg shows through. Visible bottom-only shadow
+  // matches the Figma's prominent horizontal line below the logo region.
+  // iOS: native shadow API drops downward only.
+  // Android: elevation can't be directional, so use a 2px solid bottom
+  // border in the same shadow color — gives a clearly visible line.
   container: {
     paddingTop: spacing[8],
     paddingBottom: spacing[16],
     paddingHorizontal: spacing[4],
     ...Platform.select({
       ios: {
-        // bottom-edge soft shadow only
         backgroundColor: 'transparent',
         shadowColor: bottomShadowColor,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.6,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 1,
+        shadowRadius: 10,
       },
       android: {
-        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomWidth: 2,
         borderBottomColor: bottomShadowColor,
       },
     }),
