@@ -10,7 +10,14 @@ import { HeartPulse, Wifi } from 'lucide-react-native';
 import { colors, spacing, borderRadius } from '../../../shared/design';
 import { CARESIGNAL_LOGO_DATA_URI } from './logoData';
 
-const LOGO_FILE_NAME = 'caresignal-logo.png';
+// Use a unique filename per app launch. Android Glide caches bitmaps in a
+// pool keyed by URI; a previous failed decode (when we briefly wrote bad
+// bytes via the new-API File.write) poisons that pool entry, and every
+// subsequent load of the *same URI* fails with "Problem decoding into
+// existing bitmap" even when the file on disk is correct. A fresh URI
+// per launch guarantees Glide allocates a new bitmap.
+const SESSION_ID = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+const LOGO_FILE_NAME = `caresignal-logo-${SESSION_ID}.png`;
 
 /**
  * Materialize the base64 PNG (logoData.ts) into a real file in the OS
@@ -35,6 +42,19 @@ function useLogoFileUri(): { uri: string | null; failed: boolean } {
         const cacheDir = LegacyFS.cacheDirectory;
         if (!cacheDir) throw new Error('No cache directory available');
         const path = cacheDir + LOGO_FILE_NAME;
+
+        // Best-effort: drop any stale logos from previous sessions so the
+        // cache dir doesn't grow unbounded. Failures here are non-fatal.
+        try {
+          const entries = await LegacyFS.readDirectoryAsync(cacheDir);
+          await Promise.all(
+            entries
+              .filter((e) => e.startsWith('caresignal-logo-') && e !== LOGO_FILE_NAME)
+              .map((e) => LegacyFS.deleteAsync(cacheDir + e, { idempotent: true }))
+          );
+        } catch {
+          // ignore
+        }
 
         // Strip the "data:image/png;base64," prefix so we pass only the
         // raw base64 payload to writeAsStringAsync.
