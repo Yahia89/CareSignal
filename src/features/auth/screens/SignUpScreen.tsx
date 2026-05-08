@@ -17,6 +17,7 @@ import {
   useColors,
   spacing,
   borderRadius,
+  getShadowStyle,
   colors as staticColors,
 } from '../../../shared/design';
 import {
@@ -243,12 +244,18 @@ const styles = StyleSheet.create({
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
 
   eyebrow: { fontSize: 14, fontWeight: '500', color: staticColors.text.primary },
-  title: { fontSize: 28, lineHeight: 34, fontWeight: '800', color: staticColors.text.primary },
+  title: {
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '900',
+    color: staticColors.text.primary,
+    letterSpacing: -0.3,
+  },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
     color: staticColors.text.primary,
-    opacity: 0.85,
+    opacity: 0.78,
   },
 
   nameRow: { flexDirection: 'row', alignItems: 'flex-start' },
@@ -261,7 +268,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  submitBtn: { width: '100%', minHeight: 56, borderRadius: borderRadius.full },
+  submitBtn: {
+    width: '100%',
+    minHeight: 58,
+    borderRadius: borderRadius.full,
+    ...getShadowStyle('lg'),
+  },
 
   footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   footerText: { fontSize: 15, color: staticColors.text.primary },

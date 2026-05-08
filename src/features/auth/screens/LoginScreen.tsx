@@ -17,6 +17,7 @@ import {
   useColors,
   spacing,
   borderRadius,
+  getShadowStyle,
   colors as staticColors,
 } from '../../../shared/design';
 import {
@@ -105,7 +106,7 @@ export const LoginScreen = () => {
           <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
             <LogoCard />
 
-            <Spacer y="xxl" />
+            <Spacer y="xl" />
 
             <Text style={styles.title}>Login for Care Signal</Text>
             <Spacer y="sm" />
@@ -198,16 +199,17 @@ const styles = StyleSheet.create({
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
 
   title: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: '800',
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '900',
     color: staticColors.text.primary,
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
     color: staticColors.text.primary,
-    opacity: 0.85,
+    opacity: 0.78,
   },
 
   submitError: {
@@ -217,7 +219,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  submitBtn: { width: '100%', minHeight: 56, borderRadius: borderRadius.full },
+  // Pill button — bumped to lg shadow so the neumorphic lift is unmistakable
+  // against the soft blue-gray background.
+  submitBtn: {
+    width: '100%',
+    minHeight: 58,
+    borderRadius: borderRadius.full,
+    ...getShadowStyle('lg'),
+  },
 
   footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   footerText: { fontSize: 15, color: staticColors.text.primary },

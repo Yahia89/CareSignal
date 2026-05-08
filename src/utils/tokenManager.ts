@@ -10,15 +10,23 @@ interface DecodedToken {
 
 /**
  * Decode JWT token (without verification - client side only)
+ * Uses atob for React Native compatibility (no Buffer)
  */
 export const decodeToken = (token: string): DecodedToken | null => {
   try {
     const parts = token.split('.');
     if (parts.length !== 3 || !parts[1]) return null;
 
-    const decoded = JSON.parse(
-      Buffer.from(parts[1], 'base64').toString('utf-8')
+    // Use atob for base64 decoding (works in React Native)
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
     );
+    const decoded = JSON.parse(jsonPayload);
     return decoded;
   } catch (error) {
     console.error('Error decoding token:', error);

@@ -16,24 +16,37 @@ export const useVoiceAssistant = (enabled: boolean = true) => {
     }
     
     try {
-      // Check if thing is already speaking
+      // Check if already speaking
       const isCurrentlySpeaking = await Speech.isSpeakingAsync();
       if (isCurrentlySpeaking) {
         await Speech.stop();
       }
 
-      Speech.speak(text, {
-        language: 'en',
-        pitch: 1.0,
-        rate: 0.9,
-        // Reliability: omit complex options first
-        onStart: () => console.log('[VoiceAssistant] Started speaking'),
-        onDone: () => console.log('[VoiceAssistant] Finished speaking'),
-        onError: (err) => console.error('[VoiceAssistant] Error during speech', err),
-        ...speechOptions,
+      // Wrap Speech.speak in a promise for proper async handling
+      return new Promise<void>((resolve, reject) => {
+        try {
+          Speech.speak(text, {
+            language: 'en',
+            pitch: 1.0,
+            rate: 0.9,
+            onStart: () => console.log('[VoiceAssistant] Started speaking'),
+            onDone: () => {
+              console.log('[VoiceAssistant] Finished speaking');
+              resolve();
+            },
+            onError: (err) => {
+              console.error('[VoiceAssistant] Error during speech', err);
+              reject(err);
+            },
+            ...speechOptions,
+          });
+        } catch (err) {
+          reject(err);
+        }
       });
     } catch (error) {
       console.warn('[VoiceAssistant] Exception in speak()', error);
+      throw error;
     }
   }, [enabled]);
 
