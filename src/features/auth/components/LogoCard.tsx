@@ -90,11 +90,13 @@ function useLogoFileUri(): { uri: string | null; failed: boolean } {
 }
 
 /**
- * White rounded "CareSignal by MedTech Care" card used at the top of the
- * auth screens.
+ * "CareSignal by MedTech Care" header used at the top of the auth screens.
  *
- * Card spec (exact Figma): #F1F5F9 fill, radius 16, padding 11/24/24/24,
- * dual neumorphic drop shadow (white -8/-8/16 + #C9D9E8 +8/+8/16).
+ * No visible card background — page bg shows through. Only a subtle bottom
+ * shadow / hairline separates the logo region from the form below. This
+ * matches the Figma render where the page bg (#EEF1F5) and card bg
+ * (#F1F5F9) are nearly identical hexes, so the "card" effectively
+ * dissolves into the page; the only visible boundary is a soft bottom edge.
  *
  * Logo image: PNG materialized to disk on first load (see useLogoFileUri),
  * loaded via file:// URI through RN's standard <Image>. Programmatic
@@ -106,30 +108,26 @@ export const LogoCard = () => {
   const showFallback = writeFailed || imageLoadFailed;
 
   return (
-    <View style={styles.lightShadow}>
-      <View style={styles.darkShadow}>
-        <View style={styles.card}>
-          {showFallback ? (
-            <ProgrammaticLogo />
-          ) : uri ? (
-            <Image
-              source={{ uri }}
-              style={styles.logo}
-              resizeMode="contain"
-              onError={(e) => {
-                // eslint-disable-next-line no-console
-                console.warn(
-                  'LogoCard file:// load failed —',
-                  e.nativeEvent?.error ?? '(no message)'
-                );
-                setImageLoadFailed(true);
-              }}
-            />
-          ) : (
-            <View style={styles.logo} /> /* placeholder while file is being written */
-          )}
-        </View>
-      </View>
+    <View style={styles.container}>
+      {showFallback ? (
+        <ProgrammaticLogo />
+      ) : uri ? (
+        <Image
+          source={{ uri }}
+          style={styles.logo}
+          resizeMode="contain"
+          onError={(e) => {
+            // eslint-disable-next-line no-console
+            console.warn(
+              'LogoCard file:// load failed —',
+              e.nativeEvent?.error ?? '(no message)'
+            );
+            setImageLoadFailed(true);
+          }}
+        />
+      ) : (
+        <View style={styles.logo} />
+      )}
     </View>
   );
 };
@@ -154,57 +152,32 @@ const ProgrammaticLogo = () => (
   </View>
 );
 
-const cardBackground = '#F1F5F9';
-const lightShadowColor = '#FFFFFF';
-const darkShadowColor = '#C9D9E8';
+const bottomShadowColor = '#C9D9E8';
 
 const styles = StyleSheet.create({
-  // iOS: dual neumorphic shadow (light upper-left highlight + dark
-  // lower-right shadow) — Figma values, full opacity.
-  // Android: elevation gives a single neutral shadow we can't tint;
-  // bumped DOWN to a barely-perceptible value so the card looks like
-  // it floats just above the page rather than sitting in a deep well.
-  lightShadow: {
-    borderRadius: borderRadius.lg,
-    backgroundColor: cardBackground,
+  // No card background — page bg shows through. Subtle bottom-only shadow
+  // approximates the Figma's faint horizontal line below the logo region.
+  // iOS: native shadow API can be configured to drop only downward.
+  // Android: elevation can't be directional — fall back to a 1px hairline
+  // border on the bottom which is visually equivalent for our subtle case.
+  container: {
+    paddingTop: spacing[8],
+    paddingBottom: spacing[16],
+    paddingHorizontal: spacing[4],
     ...Platform.select({
       ios: {
-        shadowColor: lightShadowColor,
-        shadowOffset: { width: -8, height: -8 },
-        shadowOpacity: 1,
-        shadowRadius: 16,
-      },
-      android: {},
-    }),
-  },
-  darkShadow: {
-    borderRadius: borderRadius.lg,
-    backgroundColor: cardBackground,
-    ...Platform.select({
-      ios: {
-        shadowColor: darkShadowColor,
-        shadowOffset: { width: 8, height: 8 },
-        shadowOpacity: 1,
-        shadowRadius: 16,
+        // bottom-edge soft shadow only
+        backgroundColor: 'transparent',
+        shadowColor: bottomShadowColor,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.6,
+        shadowRadius: 6,
       },
       android: {
-        // Subtle: page bg #EEF1F5 and card bg #F1F5F9 are nearly identical,
-        // so a heavy shadow makes the card look obviously distinct (not
-        // the Figma intent). elevation 1.5 gives just a bottom-edge hint.
-        elevation: 2,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: bottomShadowColor,
       },
     }),
-  },
-  card: {
-    backgroundColor: cardBackground,
-    borderRadius: borderRadius.lg,
-    paddingTop: 11,
-    paddingRight: spacing[24],
-    paddingBottom: spacing[24],
-    paddingLeft: spacing[24],
-    height: 121, // exact Figma frame height (not minHeight)
-    // Logo sits at top-left per Figma padding (11/24/24/24); the empty
-    // space below is intentional — see the Figma frame.
   },
   logo: {
     width: 167,
