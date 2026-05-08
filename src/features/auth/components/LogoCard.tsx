@@ -159,6 +159,11 @@ const lightShadowColor = '#FFFFFF';
 const darkShadowColor = '#C9D9E8';
 
 const styles = StyleSheet.create({
+  // iOS: dual neumorphic shadow (light upper-left highlight + dark
+  // lower-right shadow) — Figma values, full opacity.
+  // Android: elevation gives a single neutral shadow we can't tint;
+  // bumped DOWN to a barely-perceptible value so the card looks like
+  // it floats just above the page rather than sitting in a deep well.
   lightShadow: {
     borderRadius: borderRadius.lg,
     backgroundColor: cardBackground,
@@ -182,7 +187,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 1,
         shadowRadius: 16,
       },
-      android: { elevation: 6 },
+      android: {
+        // Subtle: page bg #EEF1F5 and card bg #F1F5F9 are nearly identical,
+        // so a heavy shadow makes the card look obviously distinct (not
+        // the Figma intent). elevation 1.5 gives just a bottom-edge hint.
+        elevation: 2,
+      },
     }),
   },
   card: {
