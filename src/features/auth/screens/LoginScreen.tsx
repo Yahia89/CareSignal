@@ -14,10 +14,15 @@ import { Screen, Spacer } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { NeuButton, useColors, spacing, borderRadius, colors as staticColors } from '../../../shared/design';
 import { authService } from '../services/authService';
-import { LogoCard, OutlinedField } from '../components';
+import { LogoCard, OutlinedField, OutlinedSelect } from '../components';
 
 const FORM_MAX_WIDTH = 480;
 const TABLET_BREAKPOINT = 768;
+
+const ACCOUNT_TYPE_OPTIONS = [
+  { label: 'Family Account', value: 'family' },
+  { label: 'Senior Account', value: 'elder' },
+];
 
 export const LoginScreen = () => {
   const navigation = useNavigation<any>();
@@ -27,7 +32,9 @@ export const LoginScreen = () => {
   const isTablet = width >= TABLET_BREAKPOINT;
 
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '', familyAccount: '' });
+  const [form, setForm] = useState<{ email: string; password: string; role: 'family' | 'elder' }>(
+    { email: '', password: '', role: 'family' }
+  );
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit = form.email.trim().length > 0 && form.password.length > 0 && !loading;
@@ -37,11 +44,10 @@ export const LoginScreen = () => {
     setLoading(true);
     setError(null);
     try {
-      const trimmedFamily = form.familyAccount.trim();
       const response = await authService.login({
         email: form.email.trim(),
         password: form.password,
-        ...(trimmedFamily ? { familyAccount: trimmedFamily } : {}),
+        role: form.role,
       });
       dispatch({ type: 'LOGIN', payload: response });
     } catch (err: any) {
@@ -100,12 +106,12 @@ export const LoginScreen = () => {
               autoComplete="password"
             />
 
-            <OutlinedField
+            <OutlinedSelect
+              options={ACCOUNT_TYPE_OPTIONS}
+              value={form.role}
+              onValueChange={(v) => setForm({ ...form, role: v as 'family' | 'elder' })}
               placeholder="Family Account"
-              value={form.familyAccount}
-              onChangeText={(v) => setForm({ ...form, familyAccount: v })}
-              autoCapitalize="none"
-              editable={!loading}
+              disabled={loading}
             />
 
             {error && (
