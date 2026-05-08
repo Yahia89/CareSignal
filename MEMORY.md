@@ -93,6 +93,27 @@ Default to none. Only write a comment when *why* is non-obvious (a workaround, a
 
 ---
 
+## Patterns
+
+### Form validation
+Use `~/shared/utils/validators` for any form. Pattern:
+```ts
+const { valid, errors } = validateForm(values, {
+  email: [required(), isEmail()],
+  password: strongPassword,           // prebuilt: ≥8, letter, digit
+  firstName: personName('First name'), // prebuilt: required, no digits, ≤50
+  role: oneOf(['family', 'elder']),
+});
+if (!valid) return setErrors(errors);
+```
+Validators are composable (`Validator<T>` returns `string | null`) and pure — pair them with `OutlinedField`'s `error` prop for the red-border + message UX.
+
+### Auth role at the API boundary
+Use `~/features/auth/services/roleMapping`: `uiRoleToApi(role)` before calling `signup`, never inline the mapping in screens. UI uses `'family' | 'elder'`; API uses `'senior' | 'caregiver' | 'admin'`. Don't drift either side.
+
+### `AuthContext.login` / `signup` return shape
+Both return `AuthResult = { ok: true } | { ok: false, error: string }`. Check `result.ok` and render `result.error` locally. Don't subscribe to `state.error` from the screen — local rendering is cleaner and avoids stale-error glitches when navigating away and back.
+
 ## Active migrations / tech debt
 
 - [x] ~~CheckInHome.tsx legacy imports~~ — fixed 2026-05-08 (commit `1a9fc08`)

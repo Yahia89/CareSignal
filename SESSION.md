@@ -46,6 +46,27 @@ Format:
 
 <!-- Add new sessions above this line -->
 
+## 2026-05-08 — Wire auth screens to real API + shared form validation
+**Who:** Claude (Opus 4.7) with Isha
+**Branch:** `feature/design-remodification`
+**Goal:** Replace the demo mock with real API integration on Login + SignUp; add proper form validation that we can reuse on other screens.
+**Done:** (commit `5761c9d`)
+- **Real API**: both screens now call `useAuth().login(email, password)` / `useAuth().signup(params)` from the AuthContext. Those wrap the canonical `~/services/auth.service` (Axios → `https://carsignal-api.vercel.app/api/auth/{login,signup}`), set bearer token, persist user, schedule token refresh, and dispatch state.
+- **Deleted feature-local mock** `src/features/auth/services/authService.ts` (was unused outside the two screens; had drifted from the real shape).
+- **AuthContext API tightened**: `login`/`signup` now return `AuthResult = { ok: true } | { ok: false, error: string }` instead of `boolean`. `signup` now accepts a `SignupParams` object including role (previously hardcoded to `'senior'`). Added best-effort error-message extraction from Axios responses (handles `data.message`, `data.error`, plus the friendly "Network error" rewrite).
+- **Role mapping**: new `src/features/auth/services/roleMapping.ts` with `uiRoleToApi` / `apiRoleToUi`. UI `'elder' ↔ 'senior'`, UI `'family' ↔ 'caregiver'`. Keeps the auth-boundary translation in one place.
+- **Shared validators**: new `src/shared/utils/validators.ts` — composable `Validator<T>` functions (`required`, `isEmail`, `minLength/maxLength`, `hasLetter/hasNumber`, `noDigits`, `match`, `oneOf`) plus prebuilt rule sets (`strongPassword`, `personName(label)`) and a `validateForm(values, rules)` runner that returns `{ valid, errors }` — first failing message per field. Pure / framework-agnostic; reusable for settings, invites, etc.
+- **Per-field error UX**: `OutlinedField` and `OutlinedSelect` now take an optional `error` prop — red border + 12px message below the input. Forms clear field-level errors as the user edits, and clear the form-level submit error on any input.
+- **Validation rules applied**:
+  - **SignUp**: First/Last name (required, no digits, ≤50 chars); email (required, RFC-flavored); password (≥8 chars, has letter, has number); role (`'family' | 'elder'`).
+  - **Login**: email (required + format); password (required only); role.
+- **Navigation on success is automatic** — `RootNavigator` already routes by `isAuthenticated` + `role`. On a successful API response the user is immediately on the right stack.
+- **Verified**: `tsc --noEmit` clean; `expo export --platform ios` bundles successfully.
+**Left off at:** Auth flows are production-ready end-to-end. Next up: the Daily Checkin / Family Dashboard frame (image 4 from the user's earlier screenshot drop) when the user shares the production design.
+**Open questions / blockers:** Real API isn't smoke-tested from a device — bundling proves the wiring compiles. First real run on a simulator with the live backend may surface UX tweaks (e.g. password rules the backend actually enforces).
+
+
+
 ## 2026-05-08 — LoginScreen redesign + shared auth UI extraction
 **Who:** Claude (Opus 4.7) with Isha
 **Branch:** `feature/design-remodification`
