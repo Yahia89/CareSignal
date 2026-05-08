@@ -243,22 +243,17 @@ const styles = StyleSheet.create({
   constrain: { width: '100%', alignSelf: 'center' },
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
 
-  // Eyebrow / title / subtitle — exact Figma values:
-  // title is 23/700/#36597D, lh 100% (= 23). Eyebrow + subtitle 15/400.
-  eyebrow: { fontSize: 15, fontWeight: '400', color: staticColors.text.primary, lineHeight: 18 },
+  // Eyebrow + subtitle — exact Figma values: 14/400/#333333, lh 16.6
+  eyebrow: { fontSize: 14, lineHeight: 16.6, fontWeight: '400', color: '#333333' },
+  // Title — exact Figma: 23/700/#36597D, lh 100%
   title: {
     fontSize: 23,
-    lineHeight: 26,         // ~100% but +3 for descender breathing room
+    lineHeight: 26,
     fontWeight: '700',
     color: staticColors.text.primary,
     letterSpacing: 0,
   },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: '400',
-    color: staticColors.text.primary,
-  },
+  subtitle: { fontSize: 14, lineHeight: 16.6, fontWeight: '400', color: '#333333' },
 
   nameRow: { flexDirection: 'row', alignItems: 'flex-start' },
   nameCol: { flex: 1 },

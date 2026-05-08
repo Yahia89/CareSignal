@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   constrain: { width: '100%', alignSelf: 'center' },
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
 
-  // Title / subtitle — exact Figma values
+  // Title — exact Figma: 23/700/#36597D, lh 100%
   title: {
     fontSize: 23,
     lineHeight: 26,
@@ -206,12 +206,8 @@ const styles = StyleSheet.create({
     color: staticColors.text.primary,
     letterSpacing: 0,
   },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: '400',
-    color: staticColors.text.primary,
-  },
+  // Subtitle — exact Figma: 14/400/#333333, lh 16.6
+  subtitle: { fontSize: 14, lineHeight: 16.6, fontWeight: '400', color: '#333333' },
 
   submitError: {
     fontSize: 13,
