@@ -121,21 +121,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const finalizeAuth = useCallback(async (access_token: string, apiUser: { id: string; first_name: string; last_name: string; phone?: string; role: UserRole }) => {
+  /**
+   * Finalize a fresh Session: persist tokens, fetch the Profile (which is
+   * what carries name + role — the Session.user only has id + email), build
+   * the app User, schedule refresh, and dispatch LOGIN.
+   *
+   * The bearer token has to be set BEFORE getProfile so the request is
+   * authorized. If the profile fetch fails, we surface the error and roll
+   * back the token so the user isn't stuck "logged in but useless".
+   */
+  const finalizeAuth = useCallback(async (session: import('../../types').Session) => {
+    await setAuthToken(session.access_token);
+    await storage.setRefreshToken(session.refresh_token);
+
+    let profile: import('../../types').Profile;
+    try {
+      profile = await authService.getProfile();
+    } catch (err) {
+      // Roll back partial auth so we don't leave a token sitting around.
+      await storage.clear();
+      throw err;
+    }
+
     const user: User = {
-      id: apiUser.id,
-      name: `${apiUser.first_name} ${apiUser.last_name}`.trim(),
-      phoneNumber: apiUser.phone || '',
-      role: apiUser.role === 'senior' ? 'elder' : 'family',
+      id: session.user.id,
+      name: `${profile.first_name} ${profile.last_name}`.trim(),
+      phoneNumber: profile.phone_number ?? '',
+      role: profile.role === 'senior' ? 'elder' : 'family',
     };
 
-    await setAuthToken(access_token);
     await storage.setUser(user);
 
     clearTokenRefreshTimer(tokenRefreshTimerRef.current);
-    tokenRefreshTimerRef.current = setupTokenRefreshTimer(access_token);
+    tokenRefreshTimerRef.current = setupTokenRefreshTimer(session.access_token);
 
-    dispatch({ type: 'LOGIN', payload: { user, token: access_token } });
+    dispatch({ type: 'LOGIN', payload: { user, token: session.access_token } });
   }, []);
 
   const login = async (email: string, password: string): Promise<AuthResult> => {
@@ -143,8 +163,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
 
-      const { access_token, user: apiUser } = await authService.login({ email, password });
-      await finalizeAuth(access_token, apiUser);
+      const session = await authService.login({ email, password });
+      await finalizeAuth(session);
       return { ok: true };
     } catch (error: any) {
       const errorMsg = extractErrorMessage(error, 'Login failed. Please check your credentials.');
@@ -160,14 +180,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
 
-      const { access_token, user: apiUser } = await authService.signup({
+      const session = await authService.signup({
         email: params.email,
         password: params.password,
         first_name: params.firstName,
         last_name: params.lastName,
         role: params.role,
       });
-      await finalizeAuth(access_token, apiUser);
+      await finalizeAuth(session);
       return { ok: true };
     } catch (error: any) {
       const errorMsg = extractErrorMessage(error, 'Signup failed. Please try again.');

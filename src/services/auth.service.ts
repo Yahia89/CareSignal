@@ -1,129 +1,96 @@
 import apiClient from './api';
 import {
-  AuthResponse,
-  SignupPayload,
-  LoginPayload,
-  User,
+  ApiEnvelope,
   ForgotPasswordPayload,
   ForgotPasswordResponse,
-  ResetPasswordPayload,
+  LoginPayload,
+  Profile,
   RefreshTokenPayload,
-  RefreshTokenResponse,
+  ResetPasswordPayload,
+  Session,
+  SignupPayload,
+  VerifyEmailPayload,
 } from '../types';
+
+/**
+ * Every CareSignal endpoint returns `{ data, error }`. This unwraps that
+ * envelope into either `data` (success) or a thrown Error (`error !== null`).
+ *
+ * Throws preserve the API's own error string so screens can surface it.
+ */
+function unwrap<T>(envelope: ApiEnvelope<T>): T {
+  if (envelope?.error) {
+    throw new Error(envelope.error);
+  }
+  if (envelope?.data == null) {
+    throw new Error('Empty response from server');
+  }
+  return envelope.data;
+}
 
 export const authService = {
   /**
-   * Sign up a new user
    * POST /auth/signup
-   *
-   * Request body:
-   * {
-   *   "email": "senior@example.com",
-   *   "password": "password123",
-   *   "first_name": "Margaret",
-   *   "last_name": "Johnson",
-   *   "role": "senior"
-   * }
-   *
-   * Response: { access_token: string, user: User }
+   * 201 → returns a Session (account created, confirmation email sent).
+   * Until the user confirms via email, login may fail with an
+   * "Email not confirmed" error from Supabase.
    */
-  signup: async (payload: SignupPayload): Promise<{ access_token: string; user: User }> => {
-    const response = await apiClient.post<AuthResponse>('/auth/signup', payload);
-    const { access_token, user } = response.data;
+  signup: async (payload: SignupPayload): Promise<Session> => {
+    const response = await apiClient.post<ApiEnvelope<Session>>('/auth/signup', payload);
+    return unwrap(response.data);
+  },
 
-    if (!access_token) {
-      throw new Error('No access token received from signup');
-    }
-
-    return { access_token, user };
+  /** POST /auth/login → 200 with Session. */
+  login: async (payload: LoginPayload): Promise<Session> => {
+    const response = await apiClient.post<ApiEnvelope<Session>>('/auth/login', payload);
+    return unwrap(response.data);
   },
 
   /**
-   * Sign in an existing user
-   * POST /auth/login
+   * POST /auth/verify-email
+   * Called from the deep link the user taps in the confirmation email.
+   * Returns a fresh Session so the user is signed in immediately.
    */
-  login: async (payload: LoginPayload): Promise<{ access_token: string; user: User }> => {
-    const response = await apiClient.post<AuthResponse>('/auth/login', payload);
-    const { access_token, user } = response.data;
-
-    if (!access_token) {
-      throw new Error('No access token received from login');
-    }
-
-    return { access_token, user };
+  verifyEmail: async (payload: VerifyEmailPayload): Promise<Session> => {
+    const response = await apiClient.post<ApiEnvelope<Session>>('/auth/verify-email', payload);
+    return unwrap(response.data);
   },
 
-  /**
-   * Sign out the current user
-   * POST /auth/logout
-   */
+  /** POST /auth/logout — server invalidates the refresh token. */
   logout: async (): Promise<void> => {
     await apiClient.post('/auth/logout');
   },
 
-  /**
-   * Get current user profile
-   * GET /auth/me
-   */
-  getCurrentUser: async (): Promise<User> => {
-    const response = await apiClient.get<{ user: User }>('/auth/me');
-    return response.data.user;
+  /** GET /profiles/me — name + role + plan etc. (requires bearer token). */
+  getProfile: async (): Promise<Profile> => {
+    const response = await apiClient.get<ApiEnvelope<Profile>>('/profiles/me');
+    return unwrap(response.data);
   },
 
-  /**
-   * Request password reset
-   * POST /auth/forgot-password
-   *
-   * Request body:
-   * {
-   *   "email": "senior@example.com"
-   * }
-   *
-   * Response: { message: string, success: boolean }
-   */
+  /** POST /auth/forgot-password */
   forgotPassword: async (payload: ForgotPasswordPayload): Promise<ForgotPasswordResponse> => {
-    const response = await apiClient.post<ForgotPasswordResponse>('/auth/forgot-password', payload);
-    return response.data;
+    const response = await apiClient.post<ApiEnvelope<ForgotPasswordResponse>>(
+      '/auth/forgot-password',
+      payload
+    );
+    return unwrap(response.data);
   },
 
-  /**
-   * Reset password with token
-   * POST /auth/reset-password
-   *
-   * Request body:
-   * {
-   *   "token": "reset_token_from_email",
-   *   "password": "newpassword123",
-   *   "password_confirm": "newpassword123"
-   * }
-   *
-   * Response: { message: string, success: boolean }
-   */
+  /** POST /auth/reset-password */
   resetPassword: async (payload: ResetPasswordPayload): Promise<ForgotPasswordResponse> => {
-    const response = await apiClient.post<ForgotPasswordResponse>('/auth/reset-password', payload);
-    return response.data;
+    const response = await apiClient.post<ApiEnvelope<ForgotPasswordResponse>>(
+      '/auth/reset-password',
+      payload
+    );
+    return unwrap(response.data);
   },
 
   /**
-   * Refresh access token
-   * POST /auth/refresh
-   *
-   * Request body:
-   * {
-   *   "refresh_token": "refresh_token_string"
-   * }
-   *
-   * Response: {
-   *   "access_token": "new_jwt_token",
-   *   "refresh_token": "new_refresh_token",
-   *   "expires_in": 3600
-   * }
-   *
-   * Note: Supabase rotates the refresh token on each refresh call.
-   * Must store the new refresh_token for next refresh.
+   * POST /auth/refresh — Supabase rotates the refresh_token on each call,
+   * so always store the new one for next time.
    */
-  refreshToken: async (payload: RefreshTokenPayload): Promise<RefreshTokenResponse> => {
-    const response = await apiClient.post<RefreshTokenResponse>('/auth/refresh', payload);
-    return response.data;
+  refreshToken: async (payload: RefreshTokenPayload): Promise<Session> => {
+    const response = await apiClient.post<ApiEnvelope<Session>>('/auth/refresh', payload);
+    return unwrap(response.data);
   },
 };
