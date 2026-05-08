@@ -103,7 +103,7 @@ export const LoginScreen = () => {
           <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
             <LogoCard />
 
-            <Spacer y="lg" /> {/* ~24px (Figma gap=26) */}
+            <Spacer y="lg" />
 
             <View style={styles.formInset}>
               <Text style={styles.title}>Login for Care Signal</Text>
@@ -179,7 +179,7 @@ export const LoginScreen = () => {
               <Text style={styles.footerText}>Don’t have an account? </Text>
               <Text style={styles.footerLink}>Sign up</Text>
             </TouchableOpacity>
-            </View> {/* /formInset */}
+            </View>
           </View>
 
           <Spacer y="xxl" />

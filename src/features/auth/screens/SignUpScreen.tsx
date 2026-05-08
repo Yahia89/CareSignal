@@ -121,15 +121,10 @@ export const SignUpScreen = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
-            {/* Logo card spans the full screen width on phone — matches the
-                Figma 390×121 frame which has no horizontal margin. */}
             <LogoCard />
 
-            <Spacer y="lg" /> {/* ~24px, Figma gap=26 */}
+            <Spacer y="lg" />
 
-            {/* Form section is inset 24px on phone (Figma form rows are 324
-                wide inside a 390-wide screen → 33px each side, but Figma
-                uses 24 — keeping 24 as the brand spacing). */}
             <View style={styles.formInset}>
               <Text style={styles.eyebrow}>Create Account</Text>
             <Spacer y="sm" />
@@ -229,7 +224,7 @@ export const SignUpScreen = () => {
               <Text style={styles.footerText}>Already have an account? </Text>
               <Text style={styles.footerLink}>Log in</Text>
             </TouchableOpacity>
-            </View> {/* /formInset */}
+            </View>
           </View>
 
           <Spacer y="xxl" />
