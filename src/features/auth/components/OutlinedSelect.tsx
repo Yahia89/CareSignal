@@ -32,6 +32,7 @@ export interface OutlinedSelectProps {
   onValueChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  error?: string | undefined;
   containerStyle?: StyleProp<ViewStyle>;
 }
 
@@ -41,23 +42,30 @@ export const OutlinedSelect = ({
   onValueChange,
   placeholder = 'Select…',
   disabled = false,
+  error,
   containerStyle,
 }: OutlinedSelectProps) => {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
 
   return (
-    <>
+    <View style={[styles.outer, containerStyle]}>
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => !disabled && setOpen(true)}
-        style={[styles.wrap, disabled && styles.wrapDisabled, containerStyle]}
+        style={[
+          styles.wrap,
+          error ? styles.wrapError : null,
+          disabled ? styles.wrapDisabled : null,
+        ]}
       >
         <Text style={selected ? styles.value : styles.placeholder}>
           {selected ? selected.label : placeholder}
         </Text>
         <ChevronDown size={20} color={colors.text.secondary} />
       </TouchableOpacity>
+
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
@@ -86,24 +94,31 @@ export const OutlinedSelect = ({
           </Pressable>
         </Pressable>
       </Modal>
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  outer: { marginBottom: spacing[12] },
   wrap: {
     borderWidth: 1,
     borderColor: colors.border.light,
     backgroundColor: 'transparent',
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing[16],
-    marginBottom: spacing[12],
     minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  wrapError: { borderColor: colors.semantic.error },
   wrapDisabled: { opacity: 0.5 },
+  errorText: {
+    marginTop: spacing[4],
+    marginLeft: spacing[4],
+    fontSize: 12,
+    color: colors.semantic.error,
+  },
   value: { fontSize: 16, color: colors.text.primary, flex: 1 },
   placeholder: { fontSize: 16, color: colors.text.secondary, flex: 1 },
 

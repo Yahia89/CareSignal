@@ -12,49 +12,80 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Spacer } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
-import { NeuButton, useColors, spacing, borderRadius, colors as staticColors } from '../../../shared/design';
-import { authService } from '../services/authService';
+import {
+  NeuButton,
+  useColors,
+  spacing,
+  borderRadius,
+  colors as staticColors,
+} from '../../../shared/design';
+import {
+  validateForm,
+  required,
+  isEmail,
+  oneOf,
+  type FormErrors,
+} from '../../../shared/utils/validators';
 import { LogoCard, OutlinedField, OutlinedSelect } from '../components';
 
 const FORM_MAX_WIDTH = 480;
 const TABLET_BREAKPOINT = 768;
 
 const ACCOUNT_TYPE_OPTIONS = [
-  { label: 'Family Account', value: 'family' },
-  { label: 'Senior Account', value: 'elder' },
+  { label: 'Family Account', value: 'family' as const },
+  { label: 'Senior Account', value: 'elder' as const },
 ];
+
+type Role = (typeof ACCOUNT_TYPE_OPTIONS)[number]['value'];
+
+interface LoginForm {
+  email: string;
+  password: string;
+  role: Role;
+}
+
+const initialForm: LoginForm = { email: '', password: '', role: 'family' };
 
 export const LoginScreen = () => {
   const navigation = useNavigation<any>();
-  const { dispatch } = useAuth();
+  const { login } = useAuth();
   const colors = useColors();
   const { width } = useWindowDimensions();
   const isTablet = width >= TABLET_BREAKPOINT;
 
+  const [form, setForm] = useState<LoginForm>(initialForm);
+  const [errors, setErrors] = useState<FormErrors<LoginForm>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState<{ email: string; password: string; role: 'family' | 'elder' }>(
-    { email: '', password: '', role: 'family' }
-  );
-  const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = form.email.trim().length > 0 && form.password.length > 0 && !loading;
+  const setField = <K extends keyof LoginForm>(key: K, value: LoginForm[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
+    if (submitError) setSubmitError(null);
+  };
 
   const handleLogin = async () => {
-    if (!canSubmit) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await authService.login({
-        email: form.email.trim(),
-        password: form.password,
-        role: form.role,
-      });
-      dispatch({ type: 'LOGIN', payload: response });
-    } catch (err: any) {
-      setError(err?.message ?? 'Login failed. Please try again.');
-    } finally {
-      setLoading(false);
+    const { valid, errors: validationErrors } = validateForm<LoginForm>(form, {
+      // On login we only validate format/presence — no strength rules
+      // (the user may have an old password from before any rule existed).
+      email: [required('Email is required'), isEmail()],
+      password: required('Password is required'),
+      role: oneOf(ACCOUNT_TYPE_OPTIONS.map((o) => o.value), 'Choose an account type'),
+    });
+
+    if (!valid) {
+      setErrors(validationErrors);
+      return;
     }
+    setErrors({});
+    setSubmitError(null);
+    setLoading(true);
+
+    const result = await login(form.email.trim(), form.password);
+
+    setLoading(false);
+    // On success: RootNavigator switches stacks automatically.
+    if (!result.ok) setSubmitError(result.error);
   };
 
   return (
@@ -87,39 +118,45 @@ export const LoginScreen = () => {
             <OutlinedField
               placeholder="Email Address"
               value={form.email}
-              onChangeText={(v) => setForm({ ...form, email: v })}
+              onChangeText={(v) => setField('email', v)}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
               editable={!loading}
+              error={errors.email}
               textContentType="emailAddress"
               autoComplete="email"
+              returnKeyType="next"
             />
 
             <OutlinedField
               placeholder="Password"
               value={form.password}
-              onChangeText={(v) => setForm({ ...form, password: v })}
+              onChangeText={(v) => setField('password', v)}
               secureTextEntry
               editable={!loading}
+              error={errors.password}
               textContentType="password"
               autoComplete="password"
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
             />
 
             <OutlinedSelect
               options={ACCOUNT_TYPE_OPTIONS}
               value={form.role}
-              onValueChange={(v) => setForm({ ...form, role: v as 'family' | 'elder' })}
+              onValueChange={(v) => setField('role', v as Role)}
               placeholder="Family Account"
               disabled={loading}
+              error={errors.role}
             />
 
-            {error && (
+            {submitError ? (
               <>
                 <Spacer y="xs" />
-                <Text style={styles.error}>{error}</Text>
+                <Text style={styles.submitError}>{submitError}</Text>
               </>
-            )}
+            ) : null}
 
             <Spacer y="md" />
 
@@ -127,7 +164,7 @@ export const LoginScreen = () => {
               title="Login"
               onPress={handleLogin}
               loading={loading}
-              disabled={!canSubmit}
+              disabled={loading}
               size="lg"
               style={styles.submitBtn}
             />
@@ -138,6 +175,7 @@ export const LoginScreen = () => {
               onPress={() => navigation.navigate('SignUp')}
               activeOpacity={0.7}
               style={styles.footerRow}
+              disabled={loading}
             >
               <Text style={styles.footerText}>Don’t have an account? </Text>
               <Text style={styles.footerLink}>Sign up</Text>
@@ -172,10 +210,11 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
 
-  error: {
+  submitError: {
     fontSize: 13,
     color: staticColors.semantic.error,
     paddingHorizontal: spacing[4],
+    textAlign: 'center',
   },
 
   submitBtn: { width: '100%', minHeight: 56, borderRadius: borderRadius.full },

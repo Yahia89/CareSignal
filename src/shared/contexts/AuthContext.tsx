@@ -1,9 +1,37 @@
-import React, { createContext, useContext, useReducer, useMemo, ReactNode, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useMemo, ReactNode, useEffect, useRef, useCallback } from 'react';
 import { User } from '../types/domain';
+import { UserRole } from '../../types';
 import { authService } from '../../services/auth.service';
 import { storage } from '../../utils/storage';
 import { setAuthToken } from '../../services/api';
 import { setupTokenRefreshTimer, clearTokenRefreshTimer } from '../../utils/tokenManager';
+
+/** Result wrapper used by login/signup so screens can render errors locally
+ *  without subscribing to global state. */
+export type AuthResult = { ok: true } | { ok: false; error: string };
+
+export interface SignupParams {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+}
+
+/** Best-effort extraction of an actionable error message from the API/network. */
+function extractErrorMessage(err: any, fallback: string): string {
+  if (err?.response?.data) {
+    const d = err.response.data;
+    if (typeof d === 'string') return d;
+    if (d.message) return d.message;
+    if (d.error) return typeof d.error === 'string' ? d.error : d.error.message ?? fallback;
+  }
+  if (err?.message && typeof err.message === 'string') {
+    if (err.message === 'Network Error') return 'Network error — check your connection and try again.';
+    return err.message;
+  }
+  return fallback;
+}
 
 interface AuthState {
   user: User | null;
@@ -54,8 +82,8 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 const AuthContext = createContext<{
   state: AuthState;
   dispatch: React.Dispatch<AuthAction>;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  signup: (params: SignupParams) => Promise<AuthResult>;
   logout: () => Promise<void>;
 } | undefined>(undefined);
 
@@ -93,78 +121,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const finalizeAuth = useCallback(async (access_token: string, apiUser: { id: string; first_name: string; last_name: string; phone?: string; role: UserRole }) => {
+    const user: User = {
+      id: apiUser.id,
+      name: `${apiUser.first_name} ${apiUser.last_name}`.trim(),
+      phoneNumber: apiUser.phone || '',
+      role: apiUser.role === 'senior' ? 'elder' : 'family',
+    };
+
+    await setAuthToken(access_token);
+    await storage.setUser(user);
+
+    clearTokenRefreshTimer(tokenRefreshTimerRef.current);
+    tokenRefreshTimerRef.current = setupTokenRefreshTimer(access_token);
+
+    dispatch({ type: 'LOGIN', payload: { user, token: access_token } });
+  }, []);
+
+  const login = async (email: string, password: string): Promise<AuthResult> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
 
       const { access_token, user: apiUser } = await authService.login({ email, password });
-
-      // Transform API user to app User type
-      const user: User = {
-        id: apiUser.id,
-        name: `${apiUser.first_name} ${apiUser.last_name}`,
-        phoneNumber: apiUser.phone || '',
-        role: apiUser.role === 'senior' ? 'elder' : 'family',
-      };
-
-      await setAuthToken(access_token);
-      await storage.setUser(user);
-
-      // Setup automatic token refresh
-      clearTokenRefreshTimer(tokenRefreshTimerRef.current);
-      tokenRefreshTimerRef.current = setupTokenRefreshTimer(access_token);
-
-      dispatch({ type: 'LOGIN', payload: { user, token: access_token } });
-      return true;
+      await finalizeAuth(access_token, apiUser);
+      return { ok: true };
     } catch (error: any) {
-      const errorMsg = error.message || 'Login failed';
+      const errorMsg = extractErrorMessage(error, 'Login failed. Please check your credentials.');
       dispatch({ type: 'SET_ERROR', payload: errorMsg });
-      return false;
+      return { ok: false, error: errorMsg };
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  const signup = async (
-    email: string,
-    password: string,
-    firstName: string,
-    lastName: string
-  ): Promise<boolean> => {
+  const signup = async (params: SignupParams): Promise<AuthResult> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
 
       const { access_token, user: apiUser } = await authService.signup({
-        email,
-        password,
-        first_name: firstName,
-        last_name: lastName,
-        role: 'senior',
+        email: params.email,
+        password: params.password,
+        first_name: params.firstName,
+        last_name: params.lastName,
+        role: params.role,
       });
-
-      // Transform API user to app User type
-      const user: User = {
-        id: apiUser.id,
-        name: `${apiUser.first_name} ${apiUser.last_name}`,
-        phoneNumber: apiUser.phone || '',
-        role: apiUser.role === 'senior' ? 'elder' : 'family',
-      };
-
-      await setAuthToken(access_token);
-      await storage.setUser(user);
-
-      // Setup automatic token refresh
-      clearTokenRefreshTimer(tokenRefreshTimerRef.current);
-      tokenRefreshTimerRef.current = setupTokenRefreshTimer(access_token);
-
-      dispatch({ type: 'LOGIN', payload: { user, token: access_token } });
-      return true;
+      await finalizeAuth(access_token, apiUser);
+      return { ok: true };
     } catch (error: any) {
-      const errorMsg = error.message || 'Signup failed';
+      const errorMsg = extractErrorMessage(error, 'Signup failed. Please try again.');
       dispatch({ type: 'SET_ERROR', payload: errorMsg });
-      return false;
+      return { ok: false, error: errorMsg };
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
