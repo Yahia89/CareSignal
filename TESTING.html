@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CareSignal — Manual Test Checklist</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --border: #e3e6eb;
+    --text: #1f2430;
+    --muted: #5b6470;
+    --accent: #2563eb;
+    --pass: #16a34a;
+    --fail: #dc2626;
+    --skip: #6b7280;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  h2 {
+    margin: 32px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--border);
+    font-size: 16px;
+    color: var(--accent);
+  }
+  .sub { color: var(--muted); margin-bottom: 24px; font-size: 13px; }
+  .meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .meta label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+  .meta input {
+    width: 100%; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: 4px; font: inherit; background: #fff;
+  }
+  .summary {
+    position: sticky; top: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 24px;
+    display: flex; gap: 24px; align-items: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    z-index: 10;
+  }
+  .summary .stat { font-size: 13px; }
+  .summary .stat b { font-size: 15px; }
+  .summary .pass b { color: var(--pass); }
+  .summary .fail b { color: var(--fail); }
+  .summary .skip b { color: var(--skip); }
+  .summary .actions { margin-left: auto; display: flex; gap: 8px; }
+  .summary button {
+    border: 1px solid var(--border); background: #fff;
+    padding: 6px 12px; border-radius: 4px; font: inherit; cursor: pointer;
+  }
+  .summary button:hover { background: var(--bg); }
+  table {
+    width: 100%; border-collapse: collapse;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th, td {
+    text-align: left; vertical-align: top;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: #f0f3f7;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  tr:last-child td { border-bottom: none; }
+  td.idx { width: 50px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  td.case { width: 30%; }
+  td.expected { width: 32%; color: var(--muted); }
+  td.result { width: 110px; }
+  td.notes { }
+  select, input.notes-input {
+    width: 100%; padding: 6px 8px;
+    border: 1px solid var(--border); border-radius: 4px;
+    font: inherit; background: #fff;
+  }
+  select { font-weight: 600; }
+  tr[data-state="P"] select { background: #dcfce7; color: var(--pass); border-color: #bbf7d0; }
+  tr[data-state="F"] select { background: #fee2e2; color: var(--fail); border-color: #fecaca; }
+  tr[data-state="-"] select { background: #f3f4f6; color: var(--skip); border-color: #e5e7eb; }
+  tr[data-state="F"] { background: #fef9f9; }
+  @media print {
+    body { background: #fff; padding: 12px; }
+    .summary { position: static; box-shadow: none; }
+    .summary .actions { display: none; }
+    select, input { border: none; background: transparent !important; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<h1>CareSignal — Manual Test Checklist</h1>
+<div class="sub">Pick <b>P</b> (Pass), <b>F</b> (Fail), or <b>–</b> (Skipped) in the Result column. Notes auto-save to this browser.</div>
+
+<div class="meta">
+  <div><label>Date</label><input data-meta="date" type="date" /></div>
+  <div><label>Tester</label><input data-meta="tester" type="text" placeholder="Name" /></div>
+  <div><label>Build / SHA</label><input data-meta="build" type="text" placeholder="e.g. abc123" /></div>
+  <div><label>Device(s)</label><input data-meta="device" type="text" placeholder="iPhone 15 Pro / iPhone 16e" /></div>
+</div>
+
+<div class="summary">
+  <div class="stat">Total: <b id="stat-total">0</b></div>
+  <div class="stat pass">Passed: <b id="stat-pass">0</b></div>
+  <div class="stat fail">Failed: <b id="stat-fail">0</b></div>
+  <div class="stat skip">Skipped: <b id="stat-skip">0</b></div>
+  <div class="stat">Remaining: <b id="stat-remaining">0</b></div>
+  <div class="actions">
+    <button onclick="window.print()">Print / Save PDF</button>
+    <button onclick="exportJson()">Export JSON</button>
+    <button onclick="resetAll()">Reset</button>
+  </div>
+</div>
+
+<div id="sections"></div>
+
+<script>
+const SECTIONS = [
+  { title: "1. Authentication", rows: [
+    ["1.1",  "Sign up as FAMILY (valid email + password)",       "Lands on Family dashboard; session persists"],
+    ["1.2",  "Sign up as SENIOR (valid email + password)",       "Lands on CheckInHome; session persists"],
+    ["1.3",  "Sign up with already-existing email",              "Inline error; no crash"],
+    ["1.4",  "Sign up with weak password",                       "Validation error; no API call"],
+    ["1.5",  "Sign up with malformed email",                     "Validation error"],
+    ["1.6",  "Sign up while offline",                            "Friendly error; no stuck spinner"],
+    ["1.7",  "Sign up returns access_token: null",               "NO CRASH (regression: split-of-null fix)"],
+    ["1.8",  "Log in with valid credentials",                    "Lands on correct dashboard for role"],
+    ["1.9",  "Log in with wrong password",                       "Inline error; stays on login"],
+    ["1.10", "Log in with unknown email",                        "Inline error"],
+    ["1.11", "Log in offline",                                   "Friendly error"],
+    ["1.12", "Background app on auth screen, then foreground",   "No crash; state preserved"],
+    ["1.13", "Tap email link with valid token_hash",             "Auto-verifies; lands in app"],
+    ["1.14", "Tap expired / invalid email link",                 "Error screen with 'request new link' CTA"],
+    ["1.15", "Deep link opens app when already logged in",       "Sensible fallback"],
+    ["1.16", "Forgot password: valid email",                     "Confirmation message"],
+    ["1.17", "Forgot password: unknown email",                   "Generic message (no enumeration)"],
+    ["1.18", "Open reset link → submit new password",            "Can log in with new password"],
+    ["1.19", "Submit reset with weak password",                  "Inline validation error"],
+    ["1.20", "Logout from senior screen",                        "Returns to login; storage cleared"],
+    ["1.21", "Logout from family screen",                        "Returns to login; storage cleared"],
+    ["1.22", "Logout with no network",                           "Local state still clears"],
+    ["1.23", "API call after token near expiry",                 "Refresh fires; original call succeeds"],
+    ["1.24", "Refresh token revoked (401 → refresh 401)",        "Logout dispatched; routed to login"],
+    ["1.25", "Resume from background after token expiry",        "Auto-refresh on next API call"],
+  ]},
+  { title: "2. Senior (Elder) — Check-In Home", rows: [
+    ["2.1",  "First load of the day",                            "Greeting voice + 3 status buttons visible"],
+    ["2.2",  "Tap \"I'm OK\"",                                   "POST succeeds; flips to 'already checked in'"],
+    ["2.3",  "Tap \"I Need Help\"",                              "POST succeeds; voice plays; status set"],
+    ["2.4",  "Tap \"Urgent Help\" (autoCall ON)",                "Voice + auto-call message; alert to family"],
+    ["2.5",  "Tap \"Urgent Help\" (autoCall OFF)",               "Voice without auto-call language"],
+    ["2.6",  "Reload after submitting",                          "GET /today returns record; UI consistent"],
+    ["2.7",  "Submit while offline",                             "Inline error; button not stuck"],
+    ["2.8",  "Voice toggle ON ↔ OFF",                            "Label reflects state; actions speak or not"],
+    ["2.9",  "Switch voice Warm ↔ Clarity",                      "'Test Voice' uses selected voice"],
+    ["2.10", "Save Blood Sugar (valid positive number)",         "API succeeds; 'Saved at HH:MM' shown"],
+    ["2.11", "Save Blood Pressure (valid number)",               "Success"],
+    ["2.12", "Save vital with empty value",                      "Inline error 'Enter a reading'"],
+    ["2.13", "Save vital with non-numeric / negative / 0",       "Inline error 'Enter a valid positive number'"],
+    ["2.14", "Switch input method Camera ↔ Manual",              "Selection persists in payload"],
+    ["2.15", "Save vital while offline",                         "Error surfaced; button not stuck"],
+  ]},
+  { title: "3. Senior — Pairing (Generate Invite)", rows: [
+    ["3.1", "Generate invite code",                              "Code displayed, copyable, expires correctly"],
+    ["3.2", "Generate invite while family already linked",       "Shows existing link / appropriate state"],
+    ["3.3", "Revoke an active link",                             "Link removed; family no longer sees senior"],
+  ]},
+  { title: "4. Family — Dashboard", rows: [
+    ["4.1", "First load with no linked senior",                  "Empty state with 'Get linked' CTA"],
+    ["4.2", "Load with linked senior(s)",                        "Each card shows latest check-in + timestamp"],
+    ["4.3", "Pull-to-refresh",                                   "Re-fetches; loading indicator shown"],
+    ["4.4", "Senior has no check-in today yet",                  "'Not checked in' state visible"],
+    ["4.5", "Senior status = needs_help / urgent",               "Visually distinct (color / icon)"],
+    ["4.6", "Profile fallback (/profiles/me 500s)",              "No crash; lands on dashboard"],
+  ]},
+  { title: "5. Family — Pairing (Accept Invite)", rows: [
+    ["5.1", "Enter valid invite code",                           "Link created; senior appears on dashboard"],
+    ["5.2", "Enter invalid / expired code",                      "Inline error"],
+    ["5.3", "Enter code already used",                           "Inline error"],
+    ["5.4", "Accept while offline",                              "Error message"],
+  ]},
+  { title: "6. Family — Alerts", rows: [
+    ["6.1", "Load alerts (Plus plan)",                           "History list rendered"],
+    ["6.2", "Load alerts (free plan)",                           "Plan-required upsell shown"],
+    ["6.3", "Dismiss an alert",                                  "Removed; persists across reload"],
+    ["6.4", "Receive push for new alert",                        "Notification arrives; tap deep-links"],
+  ]},
+  { title: "7. Family — Alert Settings", rows: [
+    ["7.1", "Load current alert settings",                       "UI matches stored values"],
+    ["7.2", "Toggle a setting and save (PUT)",                   "Persists across reload"],
+    ["7.3", "Save while offline",                                "Error; values revert or hold pending"],
+  ]},
+  { title: "8. Notifications & Push", rows: [
+    ["8.1", "First-launch push permission prompt",               "Native iOS prompt shown once"],
+    ["8.2", "Decline permission",                                "App still works; no notifications"],
+    ["8.3", "Senior urgent → family receives push",              "Arrives within a few seconds"],
+    ["8.4", "Logout fires /devices/unregister",                  "No more pushes for that device"],
+    ["8.5", "Tap push while app killed",                         "App opens to relevant screen (deep link)"],
+    ["8.6", "Tap push while app foregrounded",                   "In-app toast/banner instead of OS banner"],
+  ]},
+  { title: "9. Cross-Cutting / System", rows: [
+    ["9.1", "Reload app while logged in",                        "INIT restores user + token from storage"],
+    ["9.2", "Force-quit and relaunch",                           "Same as 9.1"],
+    ["9.3", "Corrupted/missing token but user present",          "Falls back to logged-out cleanly"],
+    ["9.4", "Network drops mid-request",                         "Axios error surfaces; no unhandled rejection"],
+    ["9.5", "401 from any authed endpoint",                      "Refresh attempted; retry; logout on failure"],
+    ["9.6", "Rotate device / orientation (iPad)",                "Layout stays usable (breakpoint 768)"],
+    ["9.7", "Dynamic Type / large accessibility text",           "No clipping on buttons/cards"],
+    ["9.8", "Dark / light theme",                                "Both render correctly via useColors()"],
+    ["9.9", "Slow 3G simulation",                                "Spinners shown; no UI freezes"],
+  ]},
+  { title: "10. Regression — Recently Changed", rows: [
+    ["10.1", "Signup that previously crashed",                   "No crash; account creation completes"],
+    ["10.2", "setupTokenRefreshTimer(null) guard",               "Warns + returns null; doesn't throw"],
+    ["10.3", "decodeToken(null / undefined / '')",               "Returns null cleanly"],
+    ["10.4", "All three check-in APIs end-to-end",               "POST → GET /today → GET / all work"],
+  ]},
+];
+
+const STORAGE_KEY = "caresignal-testing-v1";
+const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  updateStats();
+}
+
+function updateStats() {
+  let pass = 0, fail = 0, skip = 0, total = 0;
+  for (const sec of SECTIONS) {
+    for (const [id] of sec.rows) {
+      total++;
+      const v = state[id]?.result;
+      if (v === "P") pass++;
+      else if (v === "F") fail++;
+      else if (v === "-") skip++;
+    }
+  }
+  document.getElementById("stat-total").textContent = total;
+  document.getElementById("stat-pass").textContent = pass;
+  document.getElementById("stat-fail").textContent = fail;
+  document.getElementById("stat-skip").textContent = skip;
+  document.getElementById("stat-remaining").textContent = total - pass - fail - skip;
+}
+
+function exportJson() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `caresignal-test-results-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function resetAll() {
+  if (!confirm("Clear all results and notes?")) return;
+  for (const key of Object.keys(state)) delete state[key];
+  save();
+  document.querySelectorAll("select").forEach(s => { s.value = ""; s.closest("tr").removeAttribute("data-state"); });
+  document.querySelectorAll(".notes-input").forEach(i => { i.value = ""; });
+}
+
+const sectionsEl = document.getElementById("sections");
+for (const sec of SECTIONS) {
+  const h = document.createElement("h2");
+  h.textContent = sec.title;
+  sectionsEl.appendChild(h);
+
+  const table = document.createElement("table");
+  table.innerHTML = `
+    <thead>
+      <tr><th>#</th><th>Test Case</th><th>Expected Result</th><th>Result</th><th>Notes</th></tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector("tbody");
+  for (const [id, name, expected] of sec.rows) {
+    const stored = state[id] || {};
+    const tr = document.createElement("tr");
+    if (stored.result) tr.setAttribute("data-state", stored.result);
+    tr.innerHTML = `
+      <td class="idx">${id}</td>
+      <td class="case">${name}</td>
+      <td class="expected">${expected}</td>
+      <td class="result">
+        <select data-id="${id}" data-field="result">
+          <option value=""></option>
+          <option value="P">P · Pass</option>
+          <option value="F">F · Fail</option>
+          <option value="-">– Skip</option>
+        </select>
+      </td>
+      <td class="notes">
+        <input class="notes-input" data-id="${id}" data-field="notes" type="text" placeholder="Notes…" />
+      </td>
+    `;
+    tbody.appendChild(tr);
+    tr.querySelector("select").value = stored.result || "";
+    tr.querySelector(".notes-input").value = stored.notes || "";
+  }
+  sectionsEl.appendChild(table);
+}
+
+// Restore meta inputs
+for (const el of document.querySelectorAll("[data-meta]")) {
+  const key = el.dataset.meta;
+  el.value = state.__meta?.[key] || "";
+  el.addEventListener("input", () => {
+    state.__meta = state.__meta || {};
+    state.__meta[key] = el.value;
+    save();
+  });
+}
+
+// Wire up row inputs
+sectionsEl.addEventListener("change", onChange);
+sectionsEl.addEventListener("input", onChange);
+function onChange(e) {
+  const t = e.target;
+  if (!t.dataset.id) return;
+  const id = t.dataset.id, field = t.dataset.field;
+  state[id] = state[id] || {};
+  state[id][field] = t.value;
+  if (field === "result") {
+    const tr = t.closest("tr");
+    if (t.value) tr.setAttribute("data-state", t.value);
+    else tr.removeAttribute("data-state");
+  }
+  save();
+}
+
+updateStats();
+</script>
+</body>
+</html>

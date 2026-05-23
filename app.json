@@ -1,42 +1,61 @@
 {
   "expo": {
     "name": "CareSignal",
-    "slug": "caresignal",
+    "slug": "CareSignal",
+    "scheme": "caresignal",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F0F4F8"
+      "backgroundColor": "#EEF1F5"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.digitalwebx.caresignal"
+      "bundleIdentifier": "com.medtechcare.caresignal"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2E86AB"
+        "backgroundColor": "#EEF1F5"
       },
-      "package": "com.digitalwebx.caresignal",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.medtechcare.caresignal"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-secure-store",
+      "@sentry/react-native",
       [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#2E86AB"
+          "color": "#1E3A5F",
+          "defaultChannel": "default",
+          "sounds": []
         }
-      ],
-      "expo-secure-store"
-    ]
+      ]
+    ],
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#1E3A5F",
+      "androidMode": "default",
+      "androidCollapsedTitle": "CareSignal"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "86ec6115-70c1-44a3-bba0-0a5bc64f8783"
+      }
+    },
+    "owner": "medtechcare"
   }
 }

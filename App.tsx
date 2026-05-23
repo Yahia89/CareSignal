@@ -1,52 +1,59 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyleSheet, View, ActivityIndicator } from 'react-native';
-import RootNavigator from './src/navigation/RootNavigator';
-import { useNotifications } from './src/hooks/useNotifications';
-import { useAuthStore } from './src/store/authStore';
-import { Colors } from './src/constants/theme';
+import * as SplashScreen from 'expo-splash-screen';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  Inter_900Black,
+} from '@expo-google-fonts/inter';
+import { Providers } from './src/app/Providers';
+import { RootNavigator } from './src/navigation/RootNavigator';
+import { ErrorBoundary } from './src/shared/components/ErrorBoundary';
+import { OfflineBanner } from './src/shared/components';
+import { View } from 'react-native';
 
-function AppContent(): React.JSX.Element {
-  const { registerForPushNotifications } = useNotifications();
-  const { hydrate, isHydrated } = useAuthStore();
+// Keep the native splash visible until our JS is ready (fonts loaded).
+// Errors here are non-fatal — if hideAsync was already called the promise rejects.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+export default function App() {
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    Inter_900Black,
+  });
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, fontError]);
 
-  useEffect(() => {
-    registerForPushNotifications();
-  }, [registerForPushNotifications]);
-
-  if (!isHydrated) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
+  // Block render until fonts are loaded so we don't flash system font first.
+  // If the font load actually errors out, fall through and render anyway with
+  // system fallback rather than leaving the user on a blank splash forever.
+  if (!fontsLoaded && !fontError) {
+    return null;
   }
 
   return (
-    <>
-      <StatusBar style="auto" />
-      <RootNavigator />
-    </>
+    <ErrorBoundary>
+      <Providers>
+        <View style={{ flex: 1 }}>
+          <OfflineBanner />
+          <View style={{ flex: 1 }}>
+            <RootNavigator />
+          </View>
+        </View>
+        <StatusBar style="auto" />
+      </Providers>
+    </ErrorBoundary>
   );
 }
-
-export default function App(): React.JSX.Element {
-  return (
-    <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
-        <AppContent />
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
-  );
-}
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-});

@@ -81,21 +81,31 @@ def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBu
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+apply from: new File(["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim(), "sentry.gradle")
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.digitalwebx.caresignal'
+    namespace 'com.medtechcare.caresignal'
     defaultConfig {
-        applicationId 'com.digitalwebx.caresignal'
+        applicationId 'com.medtechcare.caresignal'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+    }
+
+    kotlin {
+        sourceSets {
+            debug {
+                kotlin.srcDirs += ['src/main/java']
+            }
+        }
     }
     signingConfigs {
         debug {
@@ -150,6 +160,32 @@ android {
             android.packagingOptions[prop] += it
         }
     }
+}
+
+// Copy Kotlin-compiled classes to Java classes directory for DEX
+tasks.register('copyKotlinClasses') {
+    doLast {
+        def kotlinClassesDir = new File("${buildDir}/tmp/kotlin-classes/debug")
+        def javaClassesDir = new File("${buildDir}/intermediates/javac/debug/compileDebugJavaWithJavac/classes")
+
+        println "Copying Kotlin classes from: $kotlinClassesDir.absolutePath"
+        println "To: $javaClassesDir.absolutePath"
+        println "Kotlin dir exists: ${kotlinClassesDir.exists()}"
+        println "Java dir exists: ${javaClassesDir.exists()}"
+
+        if (kotlinClassesDir.exists() && javaClassesDir.exists()) {
+            copy {
+                from kotlinClassesDir
+                into javaClassesDir
+            }
+            println "Copy completed!"
+        }
+    }
+}
+
+// Make dexBuilderDebug depend on the copy task
+afterEvaluate {
+    tasks.dexBuilderDebug.dependsOn copyKotlinClasses
 }
 
 dependencies {
