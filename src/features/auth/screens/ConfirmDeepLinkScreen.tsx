@@ -31,7 +31,7 @@ export const ConfirmDeepLinkScreen = () => {
   const colors = useColors();
   const navigation = useNavigation<any>();
   const route = useRoute<ConfirmRoute>();
-  const { verifyEmail, loginWithSession } = useAuth();
+  const { state, verifyEmail, loginWithSession } = useAuth();
 
   const {
     access_token,
@@ -43,10 +43,27 @@ export const ConfirmDeepLinkScreen = () => {
 
   const [status, setStatus] = useState<'working' | 'error'>('working');
   const [error, setError] = useState<string | null>(null);
+  // Categorize the failure so we can offer the right CTA + copy. "expired"
+  // covers expired/invalid tokens; "generic" everything else.
+  const [errorKind, setErrorKind] = useState<'expired' | 'generic'>('generic');
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // ─── Sensible fallback: user is already authenticated ──────────────
+      // RootNavigator should have already routed us out of the Auth stack
+      // in this case, but a deep link can still arrive in transit. Don't
+      // try to "re-login" — just present a clear message and let the
+      // navigator do its thing on the next render cycle.
+      if (state.isAuthenticated) {
+        if (!cancelled) {
+          setError("You're already signed in. Continue using the app.");
+          setErrorKind('generic');
+          setStatus('error');
+        }
+        return;
+      }
+
       // ─── Path 1: backend handed us a fully-issued session ──────────────
       if (access_token && refresh_token) {
         // Decode the JWT to recover the user id + email so we can build a
@@ -68,6 +85,7 @@ export const ConfirmDeepLinkScreen = () => {
         if (cancelled) return;
         if (!result.ok) {
           setError(result.error);
+          setErrorKind(classifyError(result.error));
           setStatus('error');
         }
         return;
@@ -76,7 +94,10 @@ export const ConfirmDeepLinkScreen = () => {
       // ─── Path 2: legacy token_hash flow ────────────────────────────────
       if (!token_hash || !type) {
         if (!cancelled) {
-          setError('Missing or invalid confirmation link.');
+          setError(
+            'This confirmation link is missing required information. Open the most recent email or request a new link.'
+          );
+          setErrorKind('expired');
           setStatus('error');
         }
         return;
@@ -95,12 +116,14 @@ export const ConfirmDeepLinkScreen = () => {
       if (cancelled) return;
       if (!result.ok) {
         setError(result.error);
+        setErrorKind(classifyError(result.error));
         setStatus('error');
       }
       // ok=true: AuthContext flips isAuthenticated, RootNavigator swaps stacks.
     })();
     return () => { cancelled = true; };
   }, [
+    state.isAuthenticated,
     access_token,
     refresh_token,
     expires_in,
@@ -113,6 +136,10 @@ export const ConfirmDeepLinkScreen = () => {
 
   const goToLogin = () => {
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+  };
+
+  const goToForgotPassword = () => {
+    navigation.reset({ index: 0, routes: [{ name: 'ForgotPassword' }] });
   };
 
   return (
@@ -133,17 +160,43 @@ export const ConfirmDeepLinkScreen = () => {
             borderLeftColor: colors.semantic.error,
             width: '100%',
           }}>
-            <Text variant="title" color={colors.semantic.error}>Confirmation failed</Text>
+            <Text variant="title" color={colors.semantic.error}>
+              {errorKind === 'expired' ? 'Link expired or invalid' : 'Confirmation failed'}
+            </Text>
             <Spacer y="sm" />
             <Text variant="caption" color={colors.text.secondary}>
               {error ?? 'Something went wrong.'}
             </Text>
             <Spacer y="lg" />
-            <NeuButton title="Back to login" onPress={goToLogin} variant="secondary" size="md" />
+            {errorKind === 'expired' ? (
+              <>
+                <NeuButton title="Request a new link" onPress={goToForgotPassword} size="md" />
+                <Spacer y="sm" />
+                <NeuButton title="Back to login" onPress={goToLogin} variant="secondary" size="md" />
+              </>
+            ) : (
+              <NeuButton title="Back to login" onPress={goToLogin} variant="secondary" size="md" />
+            )}
           </NeuCard>
         )}
       </View>
     </Screen>
   );
 };
+
+/** Heuristic to map a raw error message to one of our user-facing buckets. */
+function classifyError(msg: string | null | undefined): 'expired' | 'generic' {
+  if (!msg) return 'generic';
+  const m = msg.toLowerCase();
+  if (
+    m.includes('expired') ||
+    m.includes('invalid') ||
+    m.includes('not found') ||
+    m.includes('token') ||
+    m.includes('otp')
+  ) {
+    return 'expired';
+  }
+  return 'generic';
+}
 

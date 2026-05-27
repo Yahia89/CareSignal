@@ -39,14 +39,27 @@ export function useForgotPassword(): UseForgotPasswordReturn {
     setSuccess(false);
     setMessage(null);
 
+    const GENERIC_MSG =
+      'If that email is registered, we just sent a reset link. Check your inbox.';
+
     try {
       await authService.forgotPassword({ email });
       setSuccess(true);
-      setMessage(
-        'If that email is registered, we just sent a reset link. Check your inbox.'
-      );
+      setMessage(GENERIC_MSG);
       return true;
     } catch (err: any) {
+      // OWASP A07 — do not reveal whether the email is registered.
+      // The backend currently returns 4xx with a specific "user not found"
+      // message for unknown emails (test 1.17 caught this). Mask it on
+      // the client by treating any 4xx response the same as success;
+      // only surface 5xx / network errors as real failures.
+      const status = err?.response?.status;
+      const isClientError = typeof status === 'number' && status >= 400 && status < 500;
+      if (isClientError) {
+        setSuccess(true);
+        setMessage(GENERIC_MSG);
+        return true;
+      }
       setError(extractError(err, 'Failed to request password reset.'));
       return false;
     } finally {

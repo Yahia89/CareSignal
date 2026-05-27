@@ -6,6 +6,7 @@ import {
   TextInput,
   Text as RNText,
   useWindowDimensions,
+  Linking,
 } from 'react-native';
 import { checkInHomeStyles as styles } from './CheckInHome.styles';
 import {
@@ -87,8 +88,70 @@ export const CheckInHome = () => {
   const [statusError, setStatusError] = useState<string | null>(null);
   const [savingVital, setSavingVital] = useState(false);
   const [vitalSavedAt, setVitalSavedAt] = useState<number | null>(null);
+  // Remember which input method was used for the most recent save so the
+  // success line can show it back to the user (proof that the selection
+  // they made actually shipped in the payload — test 2.14).
+  const [lastSavedMethod, setLastSavedMethod] = useState<VitalInputMethod | null>(null);
 
-  const { speak } = useVoiceAssistant(voiceOn);
+  const { speak: speakRaw } = useVoiceAssistant(voiceOn);
+
+  // Pick two distinct system voices once on mount, so Warm and Clarity sound
+  // unambiguously different to the listener (test 2.9 caught that pitch/rate
+  // alone was too subtle to perceive). Voice IDs vary across iOS versions, so
+  // we enumerate at runtime and pick a sensible pair by name heuristic.
+  const [warmVoiceId, setWarmVoiceId] = useState<string | undefined>(undefined);
+  const [clarityVoiceId, setClarityVoiceId] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const Speech = await import('expo-speech');
+        const voices = await Speech.getAvailableVoicesAsync();
+        if (cancelled) return;
+        const enVoices = voices.filter((v) => v.language?.toLowerCase().startsWith('en'));
+        // Heuristic: prefer typically-warmer-sounding female voices for "warm"
+        // (Samantha, Karen, Moira, Ava) and crisper voices (Daniel, Alex, Tom,
+        // Aaron) for "clarity". Falls back to the first two distinct voices.
+        const warmNames = ['samantha', 'karen', 'moira', 'ava', 'allison'];
+        const clarityNames = ['daniel', 'alex', 'tom', 'aaron', 'fred', 'oliver'];
+        const findBy = (names: string[]) =>
+          enVoices.find((v) => names.some((n) => v.identifier?.toLowerCase().includes(n)));
+        const warm = findBy(warmNames) ?? enVoices[0];
+        const clarity =
+          findBy(clarityNames) ?? enVoices.find((v) => v.identifier !== warm?.identifier) ?? enVoices[1];
+        setWarmVoiceId(warm?.identifier);
+        setClarityVoiceId(clarity?.identifier);
+      } catch {
+        // Silently ignore — falls back to pitch/rate-only differentiation.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  /**
+   * Wraps `speak` so the voice profile selected in the UI ("warm" vs
+   * "clarity") actually influences how lines are read. Combines two levers
+   * for maximum perceptible contrast:
+   *   1. A distinct system voice identifier (picked above at mount).
+   *   2. Pitch + rate tweaks — warm = deeper & slower, clarity = brighter &
+   *      slightly faster.
+   * Voice ID is the main signal; pitch/rate is the safety net for devices
+   * where only one voice is installed.
+   */
+  const speak = React.useCallback(
+    (text: string, options?: { force?: boolean }) => {
+      const isClarity = voiceType === 'clarity';
+      const pitch = isClarity ? 1.3 : 0.7;
+      const rate = isClarity ? 1.05 : 0.78;
+      const voiceId = isClarity ? clarityVoiceId : warmVoiceId;
+      // Only set `voice` when we actually have an id (strict optional props).
+      const profile = voiceId
+        ? { pitch, rate, voice: voiceId }
+        : { pitch, rate };
+      return speakRaw(text, { ...profile, ...(options ?? {}) });
+    },
+    [voiceType, speakRaw, warmVoiceId, clarityVoiceId],
+  );
 
   // Greet on first mount.
   useEffect(() => {
@@ -146,6 +209,19 @@ export const CheckInHome = () => {
     try {
       const checkIn = await checkInsService.createCheckIn({ status });
       setTodayCheckIn(checkIn);
+
+      // If the senior tapped Urgent Help AND auto-call is on in settings,
+      // fire the device's phone dialer to 911 right after the check-in
+      // submits. Best-effort — Linking.openURL throws on unsupported
+      // devices (tablets without cellular), but the check-in is already
+      // logged so the family will still be alerted via push/email/SMS.
+      if (status === 'urgent' && settingsState.urgentHelpConfig.autoCall) {
+        try {
+          await Linking.openURL('tel:911');
+        } catch (err) {
+          console.warn('[checkin] could not open phone dialer for autoCall', err);
+        }
+      }
     } catch (err) {
       setStatusError(extractApiError(err, 'Failed to submit check-in. Please try again.'));
     } finally {
@@ -182,6 +258,7 @@ export const CheckInHome = () => {
       });
       setVitalValue('');
       setVitalSavedAt(Date.now());
+      setLastSavedMethod(inputMethod);
     } catch (err) {
       setVitalError(extractApiError(err, 'Failed to save reading. Please try again.'));
     } finally {
@@ -440,7 +517,8 @@ export const CheckInHome = () => {
             <>
               <Spacer y="sm" />
               <RNText style={styles.successText}>
-                Saved at {new Date(vitalSavedAt).toLocaleTimeString()}.
+                Saved at {new Date(vitalSavedAt).toLocaleTimeString()}
+                {lastSavedMethod ? ` · via ${lastSavedMethod === 'camera' ? 'Camera Capture' : 'Manual Entry'}` : ''}.
               </RNText>
             </>
           ) : null}

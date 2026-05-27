@@ -251,9 +251,22 @@ const ElderView = ({ link, hasNoLink, generating, revoking, copied, onGenerate, 
         paddingVertical: spacing[24],
         alignItems: 'center',
       }}>
-        <Text variant="caption" color={colors.text.secondary}>
-          {link.status === 'active' ? 'Linked — share again if needed' : 'Your invite code'}
-        </Text>
+        {link.status === 'active' ? (
+          <>
+            <Text variant="title" color={colors.semantic.success}>
+              You're already linked
+            </Text>
+            <Spacer y="xs" />
+            <Text variant="caption" color={colors.text.secondary} style={{ textAlign: 'center' }}>
+              Your family is set up to receive your check-ins. You don't need a new code unless you want to add another member.
+            </Text>
+            <Spacer y="md" />
+          </>
+        ) : (
+          <Text variant="caption" color={colors.text.secondary}>
+            Your invite code
+          </Text>
+        )}
         <Spacer y="sm" />
         <Text
           style={styles.inviteCode}

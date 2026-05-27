@@ -237,7 +237,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await finalizeAuth(session);
       return { ok: true };
     } catch (error: any) {
-      const errorMsg = extractErrorMessage(error, 'Signup failed. Please try again.');
+      // The backend's signup response is identical for "email already
+      // registered" and "brand-new email needing confirmation" — Supabase's
+      // anti-enumeration mode is on, so we genuinely cannot tell them apart
+      // from a single API call (we confirmed by probing /auth/login with a
+      // nonexistent email; it also returns "Invalid credentials").
+      //
+      // We collapse three signal classes into one inline message that is
+      // truthful for both cases:
+      //   • explicit-dupe responses (409 / "already" / "exists" / etc.)
+      //   • Supabase confirm-required responses ("check your email" / etc.)
+      //   • Any other unrecognized error → show the raw message.
+      const status: number | undefined = error?.response?.status;
+      const raw = extractErrorMessage(error, 'Signup failed. Please try again.');
+      const lowered = raw.toLowerCase();
+      const isAmbiguousAuthResponse =
+        status === 409 ||
+        lowered.includes('already') ||
+        lowered.includes('exists') ||
+        lowered.includes('registered') ||
+        lowered.includes('in use') ||
+        lowered.includes('check your email') ||
+        lowered.includes('confirm your account') ||
+        lowered.includes('before signing in');
+      const errorMsg = isAmbiguousAuthResponse
+        ? 'Check your email to confirm your account. If you already have an account, log in instead.'
+        : raw;
       dispatch({ type: 'SET_ERROR', payload: errorMsg });
       return { ok: false, error: errorMsg };
     } finally {

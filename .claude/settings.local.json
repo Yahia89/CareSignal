@@ -79,7 +79,17 @@
       "Bash(/usr/libexec/PlistBuddy -c \"Print CFBundleURLTypes\" \"/Users/thesuryasimha/Library/Developer/CoreSimulator/Devices/B5700EDA-892B-4868-9ADB-8153815E35C0/data/Containers/Bundle/Application/2F369185-DBEC-4FC9-8C8B-2E007E9A9AA4/CareSignal.app/Info.plist\")",
       "Bash(/usr/libexec/PlistBuddy -c \"Print CFBundleURLTypes\" \"/Users/thesuryasimha/Library/Developer/CoreSimulator/Devices/B5700EDA-892B-4868-9ADB-8153815E35C0/data/Containers/Bundle/Application/DCFC7644-9B25-4DDE-935A-8C18A3F7CC7D/CareSignal.app/Info.plist\")",
       "Bash(/usr/libexec/PlistBuddy -c 'Print CFBundleURLTypes' __TRACKED_VAR__/Info.plist)",
-      "Bash(grep -vE \"^$|^\\\\s+$\")"
+      "Bash(grep -vE \"^$|^\\\\s+$\")",
+      "Bash(curl -s \"https://carsignal-api.vercel.app/_next/static/chunks/05b0il919dvr4.js\")",
+      "Bash(grep -oE \"caresignal:[^\\\\\"'\\\\`]{1,300}\")",
+      "Bash(awk '{print $2, $11, $12, $13}')",
+      "Bash(kill 3681 3660)",
+      "Bash(xargs kill -9)",
+      "Bash(lsof -i:8081)",
+      "WebFetch(domain:carsignal-api.vercel.app)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" -X POST \"https://carsignal-api.vercel.app/api/auth/login\" -H \"Content-Type: application/json\" -d '{\"email\":\"definitely-not-a-real-user-12345@nowhere.invalid\",\"password\":\"junk\"}')",
+      "Bash(curl -s -X POST \"https://carsignal-api.vercel.app/api/auth/login\" -H \"Content-Type: application/json\" -d '{\"email\":\"definitely-not-a-real-user-12345@nowhere.invalid\",\"password\":\"junk\"}')",
+      "Bash(xargs ls -lt)"
     ]
   }
 }

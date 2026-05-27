@@ -40,8 +40,25 @@ export const ResetPasswordScreen = () => {
     try {
       await authService.resetPassword({ token_hash, type: 'recovery', password });
       setSuccess(true);
-    } catch (err) {
-      setError(extractApiError(err, 'Could not reset password. Try requesting a new link.'));
+    } catch (err: any) {
+      // Map common backend rejections to actionable copy. The token_hash
+      // is single-use and short-lived — by the time the user submits, the
+      // backend may have already consumed it (its verify page may have
+      // pre-consumed it). Surface the right next step in that case.
+      const status: number | undefined = err?.response?.status;
+      const raw = extractApiError(err, 'Could not reset password.');
+      const lowered = raw.toLowerCase();
+      const tokenIssue =
+        status === 401 ||
+        status === 403 ||
+        lowered.includes('token') ||
+        lowered.includes('expired') ||
+        lowered.includes('invalid');
+      setError(
+        tokenIssue
+          ? 'This reset link has already been used or expired. Request a new one from "Forgot password".'
+          : raw,
+      );
     } finally {
       setLoading(false);
     }

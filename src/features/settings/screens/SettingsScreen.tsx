@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { extractApiError } from '../../../shared/utils';
 import { View, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Pressable, Text as RNText } from 'react-native';
 import { AxiosError } from 'axios';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Check } from 'lucide-react-native';
+import { ArrowLeft, Check, Sun, Moon } from 'lucide-react-native';
 import { Screen } from '../../../shared/components';
 import { settingsScreenStyles as styles } from "./SettingsScreen.styles";
-import { spacing, borderRadius, figmaColor, figmaFont, figmaRadius } from '../../../shared/design';
+import { spacing, borderRadius, figmaColor, figmaFont, figmaRadius, ThemeContext } from '../../../shared/design';
 import { LogoCard } from '../../../shared/components';
 import { interFamilyForWeight } from '../../../shared/design/tokens/utils';
 import { useAuth } from '../../../shared/contexts/AuthContext';
@@ -55,6 +55,9 @@ const CheckboxRow = ({
 export const SettingsScreen = () => {
   const navigation = useNavigation<any>();
   const { dispatch, logout } = useAuth();
+  // Optional — if the ThemeProvider isn't mounted in a given environment,
+  // we just hide the toggle row gracefully.
+  const themeCtx = useContext(ThemeContext);
 
   const [settings, setSettings] = useState<AlertSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,8 +74,12 @@ export const SettingsScreen = () => {
     setLoadError(null);
     try {
       const result = await alertSettingsService.get();
-      setSettings(result);
-      lastConfirmed.current = result;
+      // Defensive merge — backend may return a partial object as the schema
+      // evolves. We need every field present to PUT later, so fill any
+      // missing keys from DEFAULT_ALERT_SETTINGS.
+      const complete: AlertSettings = { ...DEFAULT_ALERT_SETTINGS, ...result };
+      setSettings(complete);
+      lastConfirmed.current = complete;
     } catch (err) {
       const ax = err as AxiosError<{ error?: string }>;
       if (ax?.response?.status === 404) {
@@ -91,12 +98,17 @@ export const SettingsScreen = () => {
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
 
   const persist = useCallback(async (snapshot: AlertSettings) => {
+    // Always send a fully-populated payload. The PUT contract is "full
+    // replacement" — sending a partial would clobber unrelated fields with
+    // undefined and the server would either 422 or persist the wrong shape.
+    const complete: AlertSettings = { ...DEFAULT_ALERT_SETTINGS, ...snapshot };
     setSaving(true);
     setSaveError(null);
     try {
-      const updated = await alertSettingsService.update(snapshot);
-      setSettings(updated);
-      lastConfirmed.current = updated;
+      const updated = await alertSettingsService.update(complete);
+      const merged: AlertSettings = { ...DEFAULT_ALERT_SETTINGS, ...updated };
+      setSettings(merged);
+      lastConfirmed.current = merged;
     } catch (err) {
       setSaveError(extractApiError(err, 'Could not save changes'));
       if (lastConfirmed.current) setSettings(lastConfirmed.current);
@@ -112,6 +124,26 @@ export const SettingsScreen = () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => { persist(optimistic); }, 400);
   };
+
+  /**
+   * Manual save fallback — fires immediately, skipping the debounce timer.
+   * Useful when the user wants explicit confirmation that changes saved, or
+   * when auto-save was interrupted by a navigation away from the screen.
+   */
+  const handleSaveNow = useCallback(() => {
+    if (!settings) return;
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    persist(settings);
+  }, [settings, persist]);
+
+  // Has the user changed anything that hasn't been confirmed by the server?
+  const isDirty =
+    !!settings &&
+    !!lastConfirmed.current &&
+    JSON.stringify(settings) !== JSON.stringify(lastConfirmed.current);
 
   const handleLogout = async () => {
     await logout();
@@ -201,18 +233,47 @@ export const SettingsScreen = () => {
               <CheckboxRow label="Auto-call Senior" value={settings.urgent_auto_call_senior} disabled={saving} onChange={handleToggle('urgent_auto_call_senior')} />
             </View>
 
-            {saving && (
+            {saving ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing[12] }}>
                 <ActivityIndicator size="small" color={figmaColor.textMuted} />
                 <RNText style={[styles.smallMuted, { marginLeft: 6 }]}>Saving…</RNText>
               </View>
-            )}
+            ) : isDirty ? (
+              <View style={{ marginTop: spacing[12] }}>
+                <RNText style={[styles.smallMuted, { marginBottom: 8 }]}>Unsaved changes</RNText>
+                <TouchableOpacity onPress={handleSaveNow} style={styles.retryBtn}>
+                  <RNText style={styles.retryBtnText}>Save now</RNText>
+                </TouchableOpacity>
+              </View>
+            ) : lastConfirmed.current ? (
+              <RNText style={[styles.smallMuted, { marginTop: spacing[12] }]}>All changes saved.</RNText>
+            ) : null}
 
             <View style={{ height: spacing[24] }} />
 
             <TouchableOpacity onPress={() => navigation.navigate('Alerts')} style={styles.linkBtn}>
               <RNText style={styles.linkBtnText}>View alert history</RNText>
             </TouchableOpacity>
+
+            {themeCtx ? (
+              <>
+                <View style={{ height: spacing[12] }} />
+                <TouchableOpacity
+                  onPress={themeCtx.toggleTheme}
+                  style={[styles.linkBtn, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}
+                >
+                  {themeCtx.mode === 'dark' ? (
+                    <Sun size={18} color={figmaColor.titleNavy} strokeWidth={2.2} />
+                  ) : (
+                    <Moon size={18} color={figmaColor.titleNavy} strokeWidth={2.2} />
+                  )}
+                  <RNText style={[styles.linkBtnText, { marginLeft: 8 }]}>
+                    Switch to {themeCtx.mode === 'dark' ? 'Light' : 'Dark'} theme
+                  </RNText>
+                </TouchableOpacity>
+              </>
+            ) : null}
+
             <View style={{ height: spacing[12] }} />
             <TouchableOpacity onPress={handleLogout} style={styles.linkBtn}>
               <RNText style={styles.linkBtnText}>Logout</RNText>
