@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Text as RNText,
   useWindowDimensions,
   Linking,
+  Alert,
+  ActivityIndicator,
+  Animated,
+  Easing,
 } from 'react-native';
 import { checkInHomeStyles as styles } from './CheckInHome.styles';
 import {
-  LogOut,
   Volume2,
   Smile,
   AlertTriangle,
   BellRing,
   ScanLine,
   Save,
-  Link as LinkIcon,
+  Settings as SettingsIcon,
+  Home as HomeIcon,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Spacer } from '../../../shared/components';
@@ -35,10 +38,11 @@ import {
 import { interFamilyForWeight } from '../../../shared/design/tokens/utils';
 // Cross-feature import: the auth feature owns the OutlinedSelect/OutlinedField
 // components. Promote to shared/components when a third feature needs them.
-import { OutlinedSelect, OutlinedField, SegmentedControl } from '../../../shared/components';
+import { OutlinedSelect, OutlinedField } from '../../../shared/components';
 import { LogoCard } from '../../../shared/components';
 import { checkInsService } from '../../../services/checkins.service';
 import { vitalsService } from '../../../services/vitals.service';
+import { CheckInSuccessOverlay } from './CheckInSuccessOverlay';
 import {
   CheckIn,
   CheckInStatus,
@@ -52,6 +56,7 @@ import { extractApiError } from '../../../shared/utils';
 
 const TABLET_BREAKPOINT = 768;
 const FORM_MAX_WIDTH = 480;
+const NAVY = staticColors.text.primary;
 
 const VOICE_TYPE_OPTIONS = [
   { label: 'Warm Voice', value: 'warm' },
@@ -65,6 +70,85 @@ const INPUT_METHOD_OPTIONS = [
   { label: 'Camera Capture', value: 'camera' },
   { label: 'Manual Entry', value: 'manual' },
 ];
+
+// Per-status palette for the rich status cards (matches the senior design).
+const STATUS_THEME = {
+  ok: { bg: '#E6F4EA', fg: '#2E7D32' },
+  needs_help: { bg: '#FBF0DA', fg: '#B7791F' },
+  urgent: { bg: '#FBE3E0', fg: '#D32F2F' },
+} as const;
+
+interface StatusActionButtonProps {
+  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+  title: string;
+  subtitle: string;
+  status: CheckInStatus;
+  loading: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}
+
+/**
+ * Full-width colored pill: icon (left) + title + subtitle.
+ * Spring-scale press feedback matches the Figma prototype interaction.
+ */
+const StatusActionButton = ({
+  icon: Icon,
+  title,
+  subtitle,
+  status,
+  loading,
+  disabled,
+  onPress,
+}: StatusActionButtonProps) => {
+  const theme = STATUS_THEME[status];
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.93,
+      useNativeDriver: true,
+      friction: 8,
+      tension: 200,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 4,
+      tension: 60,
+    }).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity
+        style={[styles.statusCard, { backgroundColor: theme.bg }, disabled && { opacity: 0.6 }]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={disabled}
+        activeOpacity={1}
+        accessibilityRole="button"
+        accessibilityLabel={`${title}. ${subtitle}`}
+      >
+        <View style={styles.statusIconWrap}>
+          {loading ? (
+            <ActivityIndicator color={theme.fg} />
+          ) : (
+            <Icon size={30} color={theme.fg} strokeWidth={2.2} />
+          )}
+        </View>
+        <View style={styles.statusTextCol}>
+          <RNText style={[styles.statusTitle, { color: theme.fg }]}>{title}</RNText>
+          <RNText style={styles.statusSubtitle}>{subtitle}</RNText>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
 
 export const CheckInHome = () => {
   const navigation = useNavigation();
@@ -86,6 +170,12 @@ export const CheckInHome = () => {
   const [todayCheckIn, setTodayCheckIn] = useState<CheckIn | null | undefined>(undefined);
   const [submittingStatus, setSubmittingStatus] = useState<CheckInStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  // State 2: success overlay. When set, the full-screen checkmark+confetti card shows.
+  const [successStatus, setSuccessStatus] = useState<CheckInStatus | null>(null);
+  // transition: 0 = collapsed pill invisible, 1 = fully visible.
+  // Animated from 0→1 when the success overlay dismisses (State 2 → State 3).
+  const transition = useRef(new Animated.Value(0)).current;
+
   const [savingVital, setSavingVital] = useState(false);
   const [vitalSavedAt, setVitalSavedAt] = useState<number | null>(null);
   // Remember which input method was used for the most recent save so the
@@ -181,9 +271,51 @@ export const CheckInHome = () => {
     };
   }, []);
 
+  // If the user already checked in before this session, skip the animation.
+  const hasSetTransition = useRef(false);
+  useEffect(() => {
+    if (todayCheckIn === undefined) return;
+    if (hasSetTransition.current) return;
+    hasSetTransition.current = true;
+    if (todayCheckIn !== null) {
+      transition.setValue(1); // jump straight to collapsed, no animation
+    }
+  // transition ref is stable — exclude from deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todayCheckIn]);
+
   const handleLogout = () => {
     speak('Logging out');
     dispatch({ type: 'LOGOUT' });
+  };
+
+  /**
+   * The design collapses the old "Pairing" + "Logout" header buttons into a
+   * single Settings gear. Tapping it opens a native action sheet so both
+   * actions stay reachable for the senior without cluttering the header.
+   */
+  const openSettings = () => {
+    Alert.alert('Settings', undefined, [
+      {
+        text: 'Family Linking',
+        // @ts-expect-error — Pairing exists on the Elder stack
+        onPress: () => navigation.navigate('Pairing'),
+      },
+      { text: 'Log Out', style: 'destructive', onPress: handleLogout },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  /** Re-speak the greeting line (the "Replay Voice" bottom button). */
+  const replayVoice = () => {
+    const name = user?.name?.split(' ')[0] || 'Eleanor';
+    speak(`Good morning, ${name}. How are you today?`, { force: true });
+  };
+
+  /** "Family View" — shows the senior who they're linked with (Pairing screen). */
+  const goToFamilyView = () => {
+    // @ts-expect-error — Pairing exists on the Elder stack
+    navigation.navigate('Pairing');
   };
 
   /**
@@ -206,9 +338,12 @@ export const CheckInHome = () => {
 
     setSubmittingStatus(status);
     setStatusError(null);
+
+    let successCheckIn: CheckIn | null = null;
+    let apiError: string | null = null;
+
     try {
-      const checkIn = await checkInsService.createCheckIn({ status });
-      setTodayCheckIn(checkIn);
+      successCheckIn = await checkInsService.createCheckIn({ status });
 
       // If the senior tapped Urgent Help AND auto-call is on in settings,
       // fire the device's phone dialer to 911 right after the check-in
@@ -223,9 +358,22 @@ export const CheckInHome = () => {
         }
       }
     } catch (err) {
-      setStatusError(extractApiError(err, 'Failed to submit check-in. Please try again.'));
+      apiError = extractApiError(err, 'Failed to submit check-in. Please try again.');
     } finally {
       setSubmittingStatus(null);
+    }
+
+    if (apiError) {
+      setStatusError(apiError);
+      return;
+    }
+
+    if (successCheckIn) {
+      // Show State 2: checkmark + confetti overlay.
+      // The overlay auto-dismisses after 3 s and calls onDone, which fades
+      // the collapsed pill + vital section in (State 3).
+      setTodayCheckIn(successCheckIn);
+      setSuccessStatus(status);
     }
   };
 
@@ -272,258 +420,302 @@ export const CheckInHome = () => {
 
   const greetingName = user?.name?.split(' ')[0] || 'Eleanor';
 
+  const statusLabel =
+    checkedInStatus === 'ok'
+      ? "I'm OK"
+      : checkedInStatus === 'needs_help'
+        ? 'I Need Help'
+        : 'Urgent Help';
+
   return (
     <Screen style={{ backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ─────────── White header (logo + Logout + "Daily Checkin") ─── */}
-        <View style={styles.whiteHeader}>
-          <View
-            style={[
-              styles.headerInner,
-              isTablet && styles.headerInnerTablet,
-            ]}
+        {/* ─────────────── Header: logo + Settings pill ──────────────── */}
+        <View style={[styles.header, isTablet && styles.constrainTablet]}>
+          {__DEV__ ? (
+            <TouchableOpacity
+              activeOpacity={1}
+              onLongPress={async () => {
+                const { devTestPush } = await import(
+                  '../../../shared/notifications/devTestPush'
+                );
+                await devTestPush.selfRemote({
+                  title: 'CareSignal test',
+                  body: 'This came from devTestPush.selfRemote',
+                  channel: 'help',
+                  data: { type: 'help' },
+                });
+              }}
+              delayLongPress={1500}
+            >
+              <LogoCard showSeparator={false} />
+            </TouchableOpacity>
+          ) : (
+            <LogoCard showSeparator={false} />
+          )}
+          <TouchableOpacity
+            style={styles.settingsBtn}
+            onPress={openSettings}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
           >
-              <View style={styles.logoSlot}>
-                {__DEV__ ? (
-                  <TouchableOpacity
-                    activeOpacity={1}
-                    onLongPress={async () => {
-                      const { devTestPush } = await import(
-                        '../../../shared/notifications/devTestPush'
-                      );
-                      await devTestPush.selfRemote({
-                        title: 'CareSignal test',
-                        body: 'This came from devTestPush.selfRemote',
-                        channel: 'help',
-                        data: { type: 'help' },
-                      });
-                    }}
-                    delayLongPress={1500}
-                  >
-                    <LogoCard showSeparator={false} />
-                  </TouchableOpacity>
-                ) : (
-                  <LogoCard showSeparator={false} />
-                )}
-              </View>
-             <View style={styles.headerRow}> 
-              <RNText style={styles.dailyCheckin}>Daily Checkin</RNText>
-              <NeuButton
-                title="Pairing"
-                icon={LinkIcon}
-                size="sm"
-                // @ts-expect-error — Pairing exists on Elder stack
-                onPress={() => navigation.navigate('Pairing')}
-                style={styles.logoutBtn}
-              />
-              <NeuButton
-                title="Logout"
-                icon={LogOut}
-                size="sm"
-                onPress={handleLogout}
-                style={styles.logoutBtn}
-              />
-            </View>
-          </View>
-          {/* Soft fade at the bottom edge of the white header — the visual
-              boundary between header and page bg. */}
-          <View style={styles.shadowFade1} />
-          <View style={styles.shadowFade2} />
-          <View style={styles.shadowFade3} />
-          <View style={styles.shadowFade4} />
+            <SettingsIcon size={18} color={NAVY} strokeWidth={2.2} />
+            <RNText style={styles.settingsBtnText}>Settings</RNText>
+          </TouchableOpacity>
         </View>
 
         {/* ─────────────────────── Page content ──────────────────────── */}
         <View
           style={[
             styles.pageContent,
-            { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
+            { paddingHorizontal: isTablet ? spacing[32] : spacing[20] },
           ]}
         >
           <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
-          {/* ─────────────────────────── Greeting ────────────────────── */}
-          <RNText style={styles.greeting}>Good Morning, {greetingName}</RNText>
-          <Spacer y="xs" />
-          <RNText style={styles.greetingSub}>How are you doing today?</RNText>
-          <Spacer y="xs" />
-          <RNText style={styles.voiceReady}>Voice assistant is ready</RNText>
-
-          <Spacer y="md" />
-
-          {/* ─────────── Voice control card (neumorphic blue shadow) ─── */}
-          <NeuCard style={styles.voiceCard}>
-          <View style={styles.voiceRow}>
-            <NeuButton
-              title={voiceOn ? 'Voice ON' : 'Voice OFF'}
-              icon={Volume2}
-              variant={voiceOn ? 'filled' : 'primary'}
-              size="sm"
-              onPress={() => {
-                const next = !voiceOn;
-                setVoiceOn(next);
-                if (next) speak('Voice assistance enabled', { force: true });
-              }}
-              style={styles.voiceBtn}
-            />
-            <NeuButton
-              title="Test Voice"
-              size="sm"
-              onPress={() => speak('Testing 1 2 3', { force: true })}
-              style={styles.voiceBtn}
-            />
-            <View style={styles.voiceSelectWrap}>
-              <SegmentedControl
-                options={VOICE_TYPE_OPTIONS}
-                value={voiceType}
-                onValueChange={setVoiceType}
-              />
-            </View>
-          </View>
-          </NeuCard>
-
-          <Spacer y="md" />
-
-          {/* ─────────────────────── Status action buttons ────────────── */}
-          {checkedIn ? (
-            <View style={styles.alreadyCheckedIn}>
-              <RNText style={styles.alreadyCheckedInLabel}>
-                Today's status:{' '}
-                <RNText style={styles.alreadyCheckedInValue}>
-                  {checkedInStatus === 'ok'
-                    ? 'OK'
-                    : checkedInStatus === 'needs_help'
-                      ? 'Needs Help'
-                      : 'Urgent'}
-                </RNText>
-              </RNText>
-              <RNText style={styles.alreadyCheckedInHint}>
-                You've already checked in today. Come back tomorrow.
-              </RNText>
-            </View>
-          ) : (
             <>
-              <NeuButton
-                title="I’m OK"
-                icon={Smile}
-                size="lg"
-                loading={submittingStatus === 'ok'}
-                disabled={submittingStatus !== null}
-                onPress={() => handleStatusReport('ok')}
-                style={styles.statusBtn}
-              />
+            {/* ─────────── Greeting + voice card ─────────── */}
+            <NeuCard style={styles.greetingCard}>
+              <RNText style={styles.eyebrow}>Daily Check-In</RNText>
+              <RNText style={styles.greeting}>Good Morning, {greetingName}</RNText>
+              <RNText style={styles.greetingSub}>
+                {checkedIn ? 'Status :' : 'How are you doing today?'}
+              </RNText>
               <Spacer y="md" />
-              <NeuButton
-                title="I Need Help"
-                icon={AlertTriangle}
-                size="lg"
-                loading={submittingStatus === 'needs_help'}
-                disabled={submittingStatus !== null}
-                onPress={() => handleStatusReport('needs_help')}
-                style={styles.statusBtn}
-              />
-              <Spacer y="md" />
-              <NeuButton
-                title="Urgent Help"
-                icon={BellRing}
-                size="lg"
-                loading={submittingStatus === 'urgent'}
-                disabled={submittingStatus !== null}
-                onPress={() => handleStatusReport('urgent')}
-                style={styles.statusBtn}
-              />
-              {statusError ? (
-                <>
-                  <Spacer y="sm" />
-                  <RNText style={styles.errorText}>{statusError}</RNText>
-                </>
-              ) : null}
-            </>
-          )}
-
-          <Spacer y="xl" />
-
-          {/* ─────────────────────── Vital capture section ────────────── */}
-          <RNText style={styles.vitalEyebrow}>Optional Vital Capture</RNText>
-          <Spacer y="xs" />
-          <RNText style={styles.vitalTitle}>
-            Capture blood sugar or blood pressure
-          </RNText>
-
-          <Spacer y="md" />
-
-          <View style={styles.vitalSelectsRow}>
-            <View style={styles.vitalCol}>
-              <RNText style={styles.selectLabel}>Vital Type</RNText>
-              <OutlinedSelect
-                options={VITAL_TYPE_OPTIONS}
-                value={vitalType}
-                onValueChange={(v) => setVitalType(v as VitalType)}
-                placeholder="Blood Sugar"
-                disabled={savingVital}
-              />
-            </View>
-            <View style={{ width: spacing[12] }} />
-            <View style={styles.vitalCol}>
-              <RNText style={styles.selectLabel}>Input Method</RNText>
-              <OutlinedSelect
-                options={INPUT_METHOD_OPTIONS}
-                value={inputMethod}
-                onValueChange={(v) => setInputMethod(v as VitalInputMethod)}
-                placeholder="Camera Capture"
-                disabled={savingVital}
-              />
-            </View>
-          </View>
-
-          <View style={styles.vitalInputRow}>
-            <View style={{ flex: 1 }}>
-              <OutlinedField
-                placeholder={`E.g. 108 ${DEFAULT_VITAL_UNIT[vitalType]}`}
-                value={vitalValue}
-                onChangeText={(v) => {
-                  setVitalValue(v);
-                  if (vitalError) setVitalError(undefined);
-                }}
-                keyboardType="numeric"
-                editable={!savingVital}
-                error={vitalError}
-              />
-            </View>
-            <View style={{ width: spacing[12] }} />
-            <NeuButton
-              title="Scan"
-              icon={ScanLine}
-              size="md"
-              disabled={savingVital}
-              onPress={() => speak('Opening camera to scan reading')}
-              style={styles.scanBtn}
-            />
-          </View>
-
-          <NeuButton
-            title="Save Reading"
-            icon={Save}
-            size="lg"
-            loading={savingVital}
-            disabled={!vitalValue.trim() || savingVital}
-            onPress={handleSaveReading}
-            style={styles.saveBtn}
-          />
-
-          {vitalSavedAt ? (
-            <>
+              <RNText style={styles.voiceReady}>Voice assistant ready</RNText>
               <Spacer y="sm" />
-              <RNText style={styles.successText}>
-                Saved at {new Date(vitalSavedAt).toLocaleTimeString()}
-                {lastSavedMethod ? ` · via ${lastSavedMethod === 'camera' ? 'Camera Capture' : 'Manual Entry'}` : ''}.
-              </RNText>
-            </>
-          ) : null}
+              <View style={styles.voicePillRow}>
+                <TouchableOpacity
+                  style={styles.voicePill}
+                  onPress={() => {
+                    const next = !voiceOn;
+                    setVoiceOn(next);
+                    if (next) speak('Voice assistance enabled', { force: true });
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Volume2 size={18} color={NAVY} strokeWidth={2.2} />
+                  <RNText style={styles.voicePillText}>
+                    {voiceOn ? 'Voice ON' : 'Voice OFF'}
+                  </RNText>
+                </TouchableOpacity>
+                <View style={styles.voiceDropdownWrap}>
+                  <OutlinedSelect
+                    options={VOICE_TYPE_OPTIONS}
+                    value={voiceType}
+                    onValueChange={(v) => {
+                      setVoiceType(v);
+                      speak('Testing the selected voice', { force: true });
+                    }}
+                  />
+                </View>
+              </View>
+            </NeuCard>
 
-          <Spacer y="xxl" />
+            <Spacer y="lg" />
+
+            {/* ── State 2: full-screen checkmark + confetti overlay ──────── */}
+            {successStatus ? (
+              <CheckInSuccessOverlay
+                status={successStatus}
+                name={greetingName}
+                onDone={() => {
+                  setSuccessStatus(null);
+                  // State 2 → 3: fade the collapsed pill + vital section in.
+                  Animated.timing(transition, {
+                    toValue: 1,
+                    duration: 500,
+                    easing: Easing.out(Easing.ease),
+                    useNativeDriver: false,
+                  }).start();
+                }}
+              />
+            ) : checkedIn ? (
+              /* ── State 3: collapsed pill ──────────────────────────────── */
+              <Animated.View style={{ opacity: transition }}>
+                <View
+                  style={[
+                    styles.collapsedStatus,
+                    { backgroundColor: STATUS_THEME[checkedInStatus ?? 'ok'].bg },
+                  ]}
+                >
+                  <View style={styles.statusIconWrap}>
+                    {checkedInStatus === 'ok' ? (
+                      <Smile size={28} color={STATUS_THEME.ok.fg} strokeWidth={2.2} />
+                    ) : checkedInStatus === 'needs_help' ? (
+                      <AlertTriangle size={28} color={STATUS_THEME.needs_help.fg} strokeWidth={2.2} />
+                    ) : (
+                      <BellRing size={28} color={STATUS_THEME.urgent.fg} strokeWidth={2.2} />
+                    )}
+                  </View>
+                  <View style={styles.statusTextCol}>
+                    <RNText
+                      style={[styles.statusTitle, { color: STATUS_THEME[checkedInStatus ?? 'ok'].fg }]}
+                    >
+                      {statusLabel}
+                    </RNText>
+                  </View>
+                </View>
+                <Spacer y="xs" />
+                <RNText style={styles.checkedInHint}>
+                  You've checked in today. Come back tomorrow.
+                </RNText>
+              </Animated.View>
+            ) : (
+              /* ── State 1: three action buttons ────────────────────────── */
+              <View>
+                <StatusActionButton
+                  icon={Smile}
+                  title="I'm OK"
+                  subtitle="Quick Daily Confirmation"
+                  status="ok"
+                  loading={submittingStatus === 'ok'}
+                  disabled={submittingStatus !== null}
+                  onPress={() => handleStatusReport('ok')}
+                />
+                <Spacer y="md" />
+                <StatusActionButton
+                  icon={AlertTriangle}
+                  title="I Need Help"
+                  subtitle="Notify my Support Circle"
+                  status="needs_help"
+                  loading={submittingStatus === 'needs_help'}
+                  disabled={submittingStatus !== null}
+                  onPress={() => handleStatusReport('needs_help')}
+                />
+                <Spacer y="md" />
+                <StatusActionButton
+                  icon={BellRing}
+                  title="Urgent Help"
+                  subtitle="Escalate Right Away"
+                  status="urgent"
+                  loading={submittingStatus === 'urgent'}
+                  disabled={submittingStatus !== null}
+                  onPress={() => handleStatusReport('urgent')}
+                />
+                {statusError ? (
+                  <>
+                    <Spacer y="sm" />
+                    <RNText style={styles.errorText}>{statusError}</RNText>
+                  </>
+                ) : null}
+
+                <Spacer y="md" />
+
+                {/* Bottom row: Replay Voice + Family View */}
+                <View style={styles.bottomRow}>
+                  <TouchableOpacity
+                    style={styles.bottomBtn}
+                    onPress={replayVoice}
+                    activeOpacity={0.8}
+                  >
+                    <Volume2 size={20} color={NAVY} strokeWidth={2.2} />
+                    <RNText style={styles.bottomBtnText}>Replay Voice</RNText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.bottomBtn}
+                    onPress={goToFamilyView}
+                    activeOpacity={0.8}
+                  >
+                    <HomeIcon size={20} color={NAVY} strokeWidth={2.2} />
+                    <RNText style={styles.bottomBtnText}>Family View</RNText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* ───────────── Vital capture (shown after check-in) ───────── */}
+            {checkedIn && !successStatus ? (
+              <Animated.View style={{ opacity: transition }}>
+                <Spacer y="xl" />
+                <RNText style={styles.vitalEyebrow}>Optional Vital Capture</RNText>
+                <Spacer y="xs" />
+                <RNText style={styles.vitalTitle}>
+                  Capture blood sugar or blood pressure
+                </RNText>
+
+                <Spacer y="md" />
+
+                <View style={styles.vitalSelectsRow}>
+                  <View style={styles.vitalCol}>
+                    <RNText style={styles.selectLabel}>Vital Type</RNText>
+                    <OutlinedSelect
+                      options={VITAL_TYPE_OPTIONS}
+                      value={vitalType}
+                      onValueChange={(v) => setVitalType(v as VitalType)}
+                      placeholder="Blood Sugar"
+                      disabled={savingVital}
+                    />
+                  </View>
+                  <View style={{ width: spacing[12] }} />
+                  <View style={styles.vitalCol}>
+                    <RNText style={styles.selectLabel}>Input Method</RNText>
+                    <OutlinedSelect
+                      options={INPUT_METHOD_OPTIONS}
+                      value={inputMethod}
+                      onValueChange={(v) => setInputMethod(v as VitalInputMethod)}
+                      placeholder="Camera Capture"
+                      disabled={savingVital}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.vitalInputRow}>
+                  <View style={{ flex: 1 }}>
+                    <OutlinedField
+                      placeholder={`E.g. 108 ${DEFAULT_VITAL_UNIT[vitalType]}`}
+                      value={vitalValue}
+                      onChangeText={(v) => {
+                        setVitalValue(v);
+                        if (vitalError) setVitalError(undefined);
+                      }}
+                      keyboardType="numeric"
+                      editable={!savingVital}
+                      error={vitalError}
+                    />
+                  </View>
+                  <View style={{ width: spacing[12] }} />
+                  <NeuButton
+                    title="Scan"
+                    icon={ScanLine}
+                    size="md"
+                    disabled={savingVital}
+                    onPress={() => speak('Opening camera to scan reading')}
+                    style={styles.scanBtn}
+                  />
+                </View>
+
+                <NeuButton
+                  title="Save Reading"
+                  icon={Save}
+                  size="lg"
+                  loading={savingVital}
+                  disabled={!vitalValue.trim() || savingVital}
+                  onPress={handleSaveReading}
+                  style={styles.saveBtn}
+                />
+
+                {vitalSavedAt ? (
+                  <>
+                    <Spacer y="sm" />
+                    <RNText style={styles.successText}>
+                      Saved at {new Date(vitalSavedAt).toLocaleTimeString()}
+                      {lastSavedMethod
+                        ? ` · via ${lastSavedMethod === 'camera' ? 'Camera Capture' : 'Manual Entry'}`
+                        : ''}
+                      .
+                    </RNText>
+                  </>
+                ) : null}
+              </Animated.View>
+            ) : null}
+
+            </>
+
+            <Spacer y="xxl" />
           </View>
         </View>
       </ScrollView>

@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { ApiEnvelope, SeniorStatusResult } from '../types';
+import { ApiEnvelope, PaginatedEnvelope, SeniorStatusResult, Vital } from '../types';
 
 function unwrap<T>(envelope: ApiEnvelope<T>): T {
   if (envelope?.error) throw new Error(envelope.error);
@@ -33,6 +33,23 @@ export const seniorService = {
         message: err?.message,
       });
       throw err;
+    }
+  },
+
+  /**
+   * GET /senior/vitals — family only.
+   * Returns the linked senior's recent vital readings so the family dashboard
+   * can display the Vitals Snapshot section.
+   * Returns [] on 403/404 (not linked, no vitals, or endpoint not supported).
+   */
+  getVitals: async (limit = 5): Promise<Vital[]> => {
+    try {
+      const response = await apiClient.get<PaginatedEnvelope<Vital>>('/senior/vitals', {
+        params: { limit },
+      });
+      return response.data?.data ?? [];
+    } catch {
+      return [];
     }
   },
 };

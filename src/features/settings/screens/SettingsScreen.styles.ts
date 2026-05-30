@@ -156,6 +156,62 @@ export const settingsScreenStyles = StyleSheet.create({
     borderColor: figmaColor.green,
   },
 
+  // About the App collapsible
+  aboutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: figmaColor.cardBg,
+    borderWidth: 1,
+    borderColor: figmaColor.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: spacing[16],
+    gap: spacing[8],
+  },
+  aboutBtnOpen: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  aboutLabel: {
+    flex: 1,
+    fontFamily: interFamilyForWeight(600),
+    fontSize: figmaFont.bodyLg,
+    color: figmaColor.titleNavy,
+  },
+  aboutBody: {
+    backgroundColor: figmaColor.cardBg,
+    borderWidth: 1,
+    borderColor: figmaColor.border,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    padding: spacing[16],
+  },
+
+  // Current Alert Routing summary
+  routingHeading: {
+    fontFamily: interFamilyForWeight(500),
+    fontSize: figmaFont.body,
+    color: figmaColor.bodyDark,
+  },
+  routingCard: {
+    backgroundColor: figmaColor.cardBg,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: spacing[16],
+  },
+  routingEyebrow: {
+    fontFamily: interFamilyForWeight(400),
+    fontSize: figmaFont.caption,
+    color: figmaColor.textMuted,
+    marginBottom: 4,
+  },
+  routingValue: {
+    fontFamily: interFamilyForWeight(600),
+    fontSize: figmaFont.bodyXl,
+    color: figmaColor.titleNavy,
+  },
+
   bodyText: { fontFamily: interFamilyForWeight(400), fontSize: figmaFont.body, color: figmaColor.bodyDark },
   smallMuted: { fontFamily: interFamilyForWeight(400), fontSize: figmaFont.caption, color: figmaColor.textMuted },
 

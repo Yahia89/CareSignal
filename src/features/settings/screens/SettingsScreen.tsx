@@ -3,7 +3,7 @@ import { extractApiError } from '../../../shared/utils';
 import { View, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Pressable, Text as RNText } from 'react-native';
 import { AxiosError } from 'axios';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Check, Sun, Moon } from 'lucide-react-native';
+import { ArrowLeft, Check, Sun, Moon, Info, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { Screen } from '../../../shared/components';
 import { settingsScreenStyles as styles } from "./SettingsScreen.styles";
 import { spacing, borderRadius, figmaColor, figmaFont, figmaRadius, ThemeContext } from '../../../shared/design';
@@ -59,6 +59,7 @@ export const SettingsScreen = () => {
   // we just hide the toggle row gracefully.
   const themeCtx = useContext(ThemeContext);
 
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [settings, setSettings] = useState<AlertSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -174,6 +175,29 @@ export const SettingsScreen = () => {
 
         <View style={{ height: spacing[20] }} />
 
+        {/* About the App — collapsible ─────────────────────────────────── */}
+        <Pressable
+          onPress={() => setAboutOpen((v) => !v)}
+          style={[styles.aboutBtn, aboutOpen && styles.aboutBtnOpen]}
+        >
+          <Info size={18} color={figmaColor.titleNavy} strokeWidth={2.2} />
+          <RNText style={styles.aboutLabel}>About the App</RNText>
+          {aboutOpen
+            ? <ChevronUp size={18} color={figmaColor.titleNavy} />
+            : <ChevronDown size={18} color={figmaColor.titleNavy} />}
+        </Pressable>
+        {aboutOpen && (
+          <View style={styles.aboutBody}>
+            <RNText style={styles.bodyText}>
+              CareSignal gives family members a simple daily pulse between visits, so they can
+              quickly understand whether things are steady, need support, or require immediate
+              escalation.
+            </RNText>
+          </View>
+        )}
+
+        <View style={{ height: spacing[20] }} />
+
         {loading ? (
           <View style={{ paddingVertical: spacing[40], alignItems: 'center' }}>
             <ActivityIndicator color={figmaColor.titleNavy} />
@@ -213,6 +237,34 @@ export const SettingsScreen = () => {
             </View>
 
             <View style={{ height: spacing[16] }} />
+
+            {/* Current Alert Routing — summary display */}
+            <RNText style={styles.routingHeading}>Current Alert Routing</RNText>
+            <View style={{ height: spacing[8] }} />
+            <View style={styles.routingCard}>
+              <RNText style={styles.routingEyebrow}>I Need Help</RNText>
+              <RNText style={styles.routingValue}>
+                {[
+                  settings.needs_help_email && 'Email',
+                  settings.needs_help_text && 'Text',
+                  settings.needs_help_phone && 'Phone call',
+                ].filter(Boolean).join(', ') || 'None configured'}
+              </RNText>
+            </View>
+            <View style={{ height: spacing[8] }} />
+            <View style={styles.routingCard}>
+              <RNText style={styles.routingEyebrow}>Urgent Help</RNText>
+              <RNText style={styles.routingValue}>
+                {[
+                  settings.urgent_help_email && 'Email',
+                  settings.urgent_help_text && 'Text',
+                  settings.urgent_help_phone && 'Phone call',
+                  settings.urgent_auto_call_senior && 'Auto-call senior',
+                ].filter(Boolean).join(', ') || 'None configured'}
+              </RNText>
+            </View>
+
+            <View style={{ height: spacing[20] }} />
 
             {/* I Need Help */}
             <View style={styles.card}>
