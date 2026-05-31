@@ -3,7 +3,7 @@ import { User } from '../types/domain';
 import { UserRole } from '../../types';
 import { authService } from '../../services/auth.service';
 import { storage } from '../../utils/storage';
-import { setAuthToken } from '../../services/api';
+import { setAuthToken, setLogoutCallback } from '../../services/api';
 import { setupTokenRefreshTimer, clearTokenRefreshTimer } from '../../utils/tokenManager';
 
 /** Result wrapper used by login/signup so screens can render errors locally
@@ -18,20 +18,7 @@ export interface SignupParams {
   role: UserRole;
 }
 
-/** Best-effort extraction of an actionable error message from the API/network. */
-function extractErrorMessage(err: any, fallback: string): string {
-  if (err?.response?.data) {
-    const d = err.response.data;
-    if (typeof d === 'string') return d;
-    if (d.message) return d.message;
-    if (d.error) return typeof d.error === 'string' ? d.error : d.error.message ?? fallback;
-  }
-  if (err?.message && typeof err.message === 'string') {
-    if (err.message === 'Network Error') return 'Network error — check your connection and try again.';
-    return err.message;
-  }
-  return fallback;
-}
+import { extractApiError as extractErrorMessage } from '../utils';
 
 interface AuthState {
   user: User | null;
@@ -85,6 +72,7 @@ const AuthContext = createContext<{
   login: (email: string, password: string) => Promise<AuthResult>;
   signup: (params: SignupParams) => Promise<AuthResult>;
   logout: () => Promise<void>;
+  verifyEmail: (token_hash: string, type: 'signup' | 'email') => Promise<AuthResult>;
 } | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -115,9 +103,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     initAuth();
 
+    // Wire the api-client logout callback to our reducer so a failed
+    // refresh (401 → refresh fails → user is truly logged out) triggers
+    // a proper LOGOUT dispatch and the UI flips to the auth stack.
+    setLogoutCallback(() => {
+      clearTokenRefreshTimer(tokenRefreshTimerRef.current);
+      tokenRefreshTimerRef.current = null;
+      dispatch({ type: 'LOGOUT' });
+    });
+
     // Cleanup timer on unmount
     return () => {
       clearTokenRefreshTimer(tokenRefreshTimerRef.current);
+      setLogoutCallback(null);
     };
   }, []);
 
@@ -133,22 +131,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const finalizeAuth = useCallback(async (session: import('../../types').Session) => {
     await setAuthToken(session.access_token);
     await storage.setRefreshToken(session.refresh_token);
+    console.log('Session finalized:', session);
 
-    let profile: import('../../types').Profile;
+    // Try to fetch the profile, with one retry to absorb Vercel cold starts.
+    // If it still fails (known backend issue: /profiles/me sometimes 500s
+    // for newly-confirmed accounts), fall back to a minimal user built from
+    // the session so the user is not locked out at the front door. They'll
+    // see the Family dashboard's "Get linked" empty state, which is graceful.
+    let profile: import('../../types').Profile | null = null;
     try {
       profile = await authService.getProfile();
-    } catch (err) {
-      // Roll back partial auth so we don't leave a token sitting around.
-      await storage.clear();
-      throw err;
+    } catch (firstErr) {
+      console.warn('[finalizeAuth] /profiles/me failed — retrying once', firstErr);
+      await new Promise((r) => setTimeout(r, 600));
+      try {
+        profile = await authService.getProfile();
+      } catch (secondErr) {
+        console.warn(
+          '[finalizeAuth] /profiles/me failed twice — using session fallback',
+          secondErr,
+        );
+        profile = null;
+      }
     }
 
-    const user: User = {
-      id: session.user.id,
-      name: `${profile.first_name} ${profile.last_name}`.trim(),
-      phoneNumber: profile.phone_number ?? '',
-      role: profile.role === 'senior' ? 'elder' : 'family',
-    };
+    const emailLocal = session.user.email?.split('@')[0] ?? '';
+    const user: User = profile
+      ? {
+          id: session.user.id,
+          name: `${profile.first_name} ${profile.last_name}`.trim() || emailLocal,
+          phoneNumber: profile.phone_number ?? '',
+          role: profile.role === 'senior' ? 'elder' : 'family',
+          plan: profile.plan ?? 'free',
+        }
+      : {
+          // Minimal fallback — keeps login functional when the profile
+          // endpoint is unhealthy. Defaults to 'family' so the user lands
+          // on the dashboard (handles missing data gracefully) rather than
+          // the elder check-in flow (which assumes a senior profile exists).
+          id: session.user.id,
+          name: emailLocal,
+          phoneNumber: '',
+          role: 'family',
+          plan: 'free',
+        };
 
     await storage.setUser(user);
 
@@ -198,7 +224,68 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const verifyEmail = async (token_hash: string, type: 'signup' | 'email'): Promise<AuthResult> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
+      const session = await authService.verifyEmail({ token_hash, type });
+      await finalizeAuth(session);
+      return { ok: true };
+    } catch (error: any) {
+      const errorMsg = extractErrorMessage(error, 'Could not verify email. Try again or request a new link.');
+      dispatch({ type: 'SET_ERROR', payload: errorMsg });
+      return { ok: false, error: errorMsg };
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
   const logout = async () => {
+    // Tell the backend to drop this device's push token before we wipe local
+    // auth. Best-effort — if the call fails we still proceed with logout.
+    //
+    // Spec (https://carsignal-api.vercel.app/docs#/Devices/post_api_devices_unregister):
+    //   body: { token: string<=512 }
+    //   auth: Bearer JWT (must come BEFORE we clear it — that's why this
+    //         block runs first, not in `finally`)
+    //   response 200: { data: { ok: boolean, removed: number }, error: null }
+    //
+    // Reads the token from the AsyncStorage cache populated at register time,
+    // not from expo-notifications — much cheaper and avoids re-prompting for
+    // permissions during a logout flow.
+    try {
+      const AsyncStorage = (
+        await import('@react-native-async-storage/async-storage')
+      ).default;
+      const userIdAtLogout = state.user?.id;
+      const cacheKey = userIdAtLogout
+        ? `@caresignal_last_registered_push_token_${userIdAtLogout}`
+        : null;
+      const token = cacheKey ? await AsyncStorage.getItem(cacheKey) : null;
+
+      if (token) {
+        const apiClient = (await import('../../services/api')).default;
+        try {
+          const res = await apiClient.post('/devices/unregister', { token });
+          console.log('[push] /devices/unregister ←', res.status, res.data);
+        } catch (err: any) {
+          console.warn('[push] /devices/unregister ✗', {
+            status: err?.response?.status,
+            body: err?.response?.data,
+            message: err?.message,
+          });
+        }
+        // Drop the cached token so a future login on the same device will
+        // re-register fresh (don't leak across user accounts).
+        if (cacheKey) await AsyncStorage.removeItem(cacheKey);
+      } else {
+        console.log('[push] no cached token to unregister — skipping');
+      }
+    } catch (err) {
+      console.warn('[push] could not unregister device on logout', err);
+    }
+
     try {
       await authService.logout();
     } catch (error) {
@@ -213,7 +300,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const value = useMemo(() => ({ state, dispatch, login, signup, logout }), [state, login, signup, logout]);
+  const value = useMemo(() => ({ state, dispatch, login, signup, logout, verifyEmail }), [state, login, signup, logout, verifyEmail]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

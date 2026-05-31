@@ -85,15 +85,38 @@ export interface ForgotPasswordPayload {
   email: string;
 }
 
-export interface ForgotPasswordResponse {
-  message: string;
-  success: boolean;
+/**
+ * `/auth/reset-password` per the OpenAPI spec — `token_hash` + `type` come
+ * from the deep link `caresignal://auth/confirm?token_hash=xxx&type=recovery`.
+ */
+export interface ResetPasswordPayload {
+  token_hash: string;
+  type: 'recovery';
+  password: string;
 }
 
-export interface ResetPasswordPayload {
-  token: string;
-  password: string;
-  password_confirm: string;
+/** PATCH /profiles/me body — partial update; both fields optional. */
+export interface UpdateProfilePayload {
+  first_name?: string;
+  last_name?: string;
+}
+
+/** Link record (senior ↔ family pairing). */
+export interface Link {
+  id: string;
+  senior_user_id: string;
+  family_user_id: string | null;
+  invite_code: string;
+  status: 'pending' | 'active';
+  created_at: string;
+}
+
+export interface AcceptInvitePayload {
+  invite_code: string;
+}
+
+export interface GenerateInviteResult {
+  invite_code: string;
 }
 
 export interface RefreshTokenPayload {
@@ -106,11 +129,118 @@ export interface RefreshTokenPayload {
  */
 export type RefreshTokenResponse = Session;
 
-export interface GenerateInviteResponse {
-  data: {
-    invite_code: string;
-  };
-  error: null;
+// ─── Check-ins ─────────────────────────────────────────────────────────────
+
+/** Senior's status report — three discrete options matching the Figma buttons. */
+export type CheckInStatus = 'ok' | 'needs_help' | 'urgent';
+
+/** GET /api/check-ins / GET /api/check-ins/today result. */
+export interface CheckIn {
+  id: string;
+  senior_user_id: string;
+  status: CheckInStatus;
+  checked_in_at: string; // ISO 8601
+}
+
+/** POST /api/check-ins body. */
+export interface CreateCheckInPayload {
+  status: CheckInStatus;
+}
+
+// ─── Vitals ────────────────────────────────────────────────────────────────
+
+export type VitalType = 'blood_sugar' | 'blood_pressure';
+export type VitalInputMethod = 'camera' | 'manual';
+
+/** GET /api/vitals row. */
+export interface Vital {
+  id: string;
+  senior_user_id: string;
+  vital_type: VitalType;
+  value: number;
+  unit: string;
+  input_method: VitalInputMethod;
+  recorded_at: string; // ISO 8601
+}
+
+/** POST /api/vitals body. */
+export interface CreateVitalPayload {
+  vital_type: VitalType;
+  value: number;
+  unit: string;
+  input_method: VitalInputMethod;
+}
+
+/** Default unit per vital type — matches the spec's example values. */
+export const DEFAULT_VITAL_UNIT: Record<VitalType, string> = {
+  blood_sugar: 'mg/dL',
+  blood_pressure: 'mmHg',
+};
+
+// ─── Alerts (family, Plus plan) ───────────────────────────────────────────
+
+export type AlertTriggerType = 'ok' | 'needs_help' | 'urgent';
+
+/** GET /api/alerts row. */
+export interface ApiAlert {
+  id: string;
+  senior_profile_id: string;
+  family_profile_id: string;
+  trigger_type: AlertTriggerType;
+  dismissed_at: string | null;
+  created_at: string;
+}
+
+// ─── Alert settings (family) ──────────────────────────────────────────────
+
+/** GET /api/alert-settings & PUT /api/alert-settings shape (family only). */
+export interface AlertSettings {
+  vital_capture_enabled: boolean;
+  needs_help_email: boolean;
+  needs_help_text: boolean;
+  needs_help_phone: boolean;
+  urgent_help_email: boolean;
+  urgent_help_text: boolean;
+  urgent_help_phone: boolean;
+  urgent_auto_call_senior: boolean;
+}
+
+export const DEFAULT_ALERT_SETTINGS: AlertSettings = {
+  vital_capture_enabled: false,
+  needs_help_email: true,
+  needs_help_text: false,
+  needs_help_phone: false,
+  urgent_help_email: true,
+  urgent_help_text: true,
+  urgent_help_phone: false,
+  urgent_auto_call_senior: false,
+};
+
+// ─── Senior status (family dashboard) ─────────────────────────────────────
+
+/** care_status from GET /api/senior/status — derived server-side from today's check-in. */
+export type CareStatus = 'checked_in_ok' | 'needs_help' | 'urgent' | 'not_checked_in';
+
+/** GET /api/senior/status result (family only). */
+export interface SeniorStatusResult {
+  senior: Profile;
+  check_in: CheckIn | null;
+  care_status: CareStatus;
+}
+
+/** Pagination meta returned alongside paginated list responses. */
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+/** Paginated response envelope (`{ data, error, meta }`). */
+export interface PaginatedEnvelope<T> {
+  data: T[] | null;
+  error: string | null;
+  meta?: PaginationMeta;
 }
 
 export interface PaginationParams {

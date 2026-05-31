@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Image, Text, Platform } from 'react-native';
+import { View, StyleSheet, Image, Text } from 'react-native';
 // Use the legacy File API — it has explicit base64-decoding via
 // EncodingType.Base64 that's known-good across SDK versions. The new
 // SDK 54 File.write(Uint8Array) was producing files Glide rejected
@@ -7,7 +7,8 @@ import { View, StyleSheet, Image, Text, Platform } from 'react-native';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const LegacyFS: typeof import('expo-file-system/build/legacy/FileSystem') = require('expo-file-system/legacy');
 import { HeartPulse, Wifi } from 'lucide-react-native';
-import { colors, spacing, borderRadius } from '../../../shared/design';
+import { colors, spacing, borderRadius } from '../design';
+import { interFamilyForWeight } from '../design/tokens/utils';
 import { CARESIGNAL_LOGO_DATA_URI } from './logoData';
 
 // Use a unique filename per app launch. Android Glide caches bitmaps in a
@@ -102,13 +103,22 @@ function useLogoFileUri(): { uri: string | null; failed: boolean } {
  * loaded via file:// URI through RN's standard <Image>. Programmatic
  * lucide-icon fallback only renders if both write+load fail.
  */
-export const LogoCard = () => {
+interface LogoCardProps {
+  /**
+   * Render the soft bottom shadow fade. Default true. Pass `false` when the
+   * LogoCard is nested inside a parent container that already provides its
+   * own visual boundary (e.g. the white header section in CheckInHome).
+   */
+  showSeparator?: boolean;
+}
+
+export const LogoCard = ({ showSeparator = true }: LogoCardProps = {}) => {
   const { uri, failed: writeFailed } = useLogoFileUri();
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const showFallback = writeFailed || imageLoadFailed;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, showSeparator && styles.containerShadow]}>
       {showFallback ? (
         <ProgrammaticLogo />
       ) : uri ? (
@@ -152,31 +162,20 @@ const ProgrammaticLogo = () => (
   </View>
 );
 
-const bottomShadowColor = '#C9D9E8';
-
 const styles = StyleSheet.create({
-  // No card background — page bg shows through. Visible bottom-only shadow
-  // matches the Figma's prominent horizontal line below the logo region.
-  // iOS: native shadow API drops downward only.
-  // Android: elevation can't be directional, so use a 2px solid bottom
-  // border in the same shadow color — gives a clearly visible line.
   container: {
-    paddingTop: spacing[8],
-    paddingBottom: spacing[16],
-    paddingHorizontal: spacing[4],
-    ...Platform.select({
-      ios: {
-        backgroundColor: 'transparent',
-        shadowColor: bottomShadowColor,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 1,
-        shadowRadius: 10,
-      },
-      android: {
-        borderBottomWidth: 2,
-        borderBottomColor: bottomShadowColor,
-      },
-    }),
+    paddingTop: spacing[4],
+    paddingBottom: spacing[4],
+    paddingLeft: spacing[4],
+    paddingRight: spacing[16],
+    backgroundColor: 'transparent',
+  },
+  containerShadow: {
+    shadowColor: '#C9D8E8',
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 4,
   },
   logo: {
     width: 167,
@@ -184,20 +183,20 @@ const styles = StyleSheet.create({
   },
 
   // Fallback layout
-  row: { flexDirection: 'row', alignItems: 'center' },
+  row: { flexDirection: 'row', alignItems: 'flex-start' },
   iconWrap: { width: 56, height: 50, justifyContent: 'center', alignItems: 'center' },
   signalWrap: { position: 'absolute', top: -4, right: -2, transform: [{ rotate: '45deg' }] },
   textWrap: { marginLeft: spacing[8], flexShrink: 1 },
   wordmark: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: interFamilyForWeight(700),
     color: colors.accent.primary,
     letterSpacing: 0.1,
     lineHeight: 30,
   },
   tagline: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: interFamilyForWeight(500),
     color: colors.text.primary,
     marginTop: 2,
     letterSpacing: 0.6,

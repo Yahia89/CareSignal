@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Modal,
   Pressable,
   FlatList,
@@ -11,7 +10,8 @@ import {
   StyleProp,
 } from 'react-native';
 import { ChevronDown, Check } from 'lucide-react-native';
-import { spacing, borderRadius, colors, getShadowStyle } from '../../../shared/design';
+import { colors } from '../design';
+import { outlinedSelectStyles as styles } from './OutlinedSelect.styles';
 
 /**
  * Outlined dropdown that visually mirrors `OutlinedField`.
@@ -33,7 +33,12 @@ export interface OutlinedSelectProps {
   placeholder?: string;
   disabled?: boolean;
   error?: string | undefined;
+  /** Outer wrapper style — applied to the surrounding `<View>`. */
+  style?: StyleProp<ViewStyle>;
+  /** @deprecated alias for `style`, kept for backward compat. */
   containerStyle?: StyleProp<ViewStyle>;
+  /** Style for the pill itself (border / radius / fill overrides). */
+  fieldStyle?: StyleProp<ViewStyle>;
 }
 
 export const OutlinedSelect = ({
@@ -43,13 +48,15 @@ export const OutlinedSelect = ({
   placeholder = 'Select…',
   disabled = false,
   error,
+  style,
   containerStyle,
+  fieldStyle,
 }: OutlinedSelectProps) => {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
 
   return (
-    <View style={[styles.outer, containerStyle]}>
+    <View style={[styles.outer, containerStyle, style]}>
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => !disabled && setOpen(true)}
@@ -57,9 +64,14 @@ export const OutlinedSelect = ({
           styles.wrap,
           error ? styles.wrapError : null,
           disabled ? styles.wrapDisabled : null,
+          fieldStyle,
         ]}
       >
-        <Text style={selected ? styles.value : styles.placeholder}>
+        <Text
+          style={selected ? styles.value : styles.placeholder}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
           {selected ? selected.label : placeholder}
         </Text>
         <ChevronDown size={20} color={colors.text.secondary} />
@@ -98,52 +110,3 @@ export const OutlinedSelect = ({
   );
 };
 
-const styles = StyleSheet.create({
-  outer: { marginBottom: spacing[12] },
-  wrap: {
-    height: 41,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.inputFill.light,
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: spacing[16],
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  wrapError: { borderColor: colors.semantic.error },
-  wrapDisabled: { opacity: 0.5 },
-  errorText: {
-    marginTop: spacing[4],
-    marginLeft: spacing[4],
-    fontSize: 12,
-    color: colors.semantic.error,
-  },
-  value: { fontSize: 15, color: colors.text.primary, flex: 1 },
-  placeholder: { fontSize: 15, color: colors.text.placeholder, flex: 1 },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    padding: spacing[24],
-  },
-  sheet: {
-    backgroundColor: colors.surface.light,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    maxHeight: '50%',
-    ...getShadowStyle('lg'),
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing[16],
-    paddingHorizontal: spacing[20],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[100],
-  },
-  optionLabel: { fontSize: 16, color: colors.text.primary },
-  optionLabelActive: { fontWeight: '700', color: colors.accent.primary },
-});

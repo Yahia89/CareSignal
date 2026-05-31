@@ -1,10 +1,12 @@
 export type Role = 'elder' | 'family';
+export type Plan = 'free' | 'plus' | 'pro';
 
 export interface User {
   id: string;
   role: Role;
   name: string;
   phoneNumber: string;
+  plan?: Plan;
 }
 
 export interface Household {

@@ -19,6 +19,10 @@ export const linking: LinkingOptions<RootStackParamList> = {
       Auth: {
         screens: {
           Login: 'login',
+          // caresignal://auth/confirm?token_hash=xxx&type=signup|email|recovery
+          Confirm: 'auth/confirm',
+          // caresignal://auth/reset?token_hash=xxx (used internally after Confirm)
+          ResetPassword: 'auth/reset',
         },
       },
     },

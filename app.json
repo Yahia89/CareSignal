@@ -2,10 +2,13 @@
   "expo": {
     "name": "CareSignal",
     "slug": "CareSignal",
+    "scheme": "caresignal",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
@@ -15,7 +18,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.CareSignal"
+      "bundleIdentifier": "com.medtechcare.caresignal"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,14 +27,42 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.CareSignal"
+      "package": "com.medtechcare.caresignal"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-secure-store",
-      "@sentry/react-native"
-    ]
+      "@sentry/react-native",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "CareSignal needs camera access so seniors can scan vital readings (blood pressure, glucose) instead of typing them.",
+          "photosPermission": "CareSignal needs photo library access only if you choose to attach an existing photo."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1E3A5F",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ]
+    ],
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#1E3A5F",
+      "androidMode": "default",
+      "androidCollapsedTitle": "CareSignal"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "86ec6115-70c1-44a3-bba0-0a5bc64f8783"
+      }
+    },
+    "owner": "medtechcare"
   }
 }

@@ -1,33 +1,123 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Platform, TouchableOpacity, useWindowDimensions, Modal } from 'react-native';
-import { HeartPulse, LogOut, Volume2, Activity, ChevronDown, Camera, Phone, X } from 'lucide-react-native';
-import { Screen, Text, Spacer, Input, Select } from '../../../shared/components';
+import {
+  Alert,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Text as RNText,
+  useWindowDimensions,
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { checkInHomeStyles as styles } from './CheckInHome.styles';
+import {
+  LogOut,
+  Volume2,
+  Smile,
+  AlertTriangle,
+  BellRing,
+  ScanLine,
+  Save,
+  Link as LinkIcon,
+} from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Screen, Spacer } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { useSettings } from '../../../shared/contexts/SettingsContext';
 import { useVoiceAssistant } from '../../../shared/hooks';
-import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
+import {
+  NeuButton,
+  NeuCard,
+  useColors,
+  spacing,
+  borderRadius,
+  colors as staticColors,
+} from '../../../shared/design';
+import { interFamilyForWeight } from '../../../shared/design/tokens/utils';
+// Cross-feature import: the auth feature owns the OutlinedSelect/OutlinedField
+// components. Promote to shared/components when a third feature needs them.
+import { OutlinedSelect, OutlinedField, SegmentedControl } from '../../../shared/components';
+import { LogoCard } from '../../../shared/components';
+import { checkInsService } from '../../../services/checkins.service';
+import { vitalsService } from '../../../services/vitals.service';
+import {
+  CheckIn,
+  CheckInStatus,
+  DEFAULT_VITAL_UNIT,
+  VitalType,
+  VitalInputMethod,
+} from '../../../types';
+
+/** Best-effort error-message extraction for axios responses + Error throws. */
+import { extractApiError } from '../../../shared/utils';
+
+const TABLET_BREAKPOINT = 768;
+const FORM_MAX_WIDTH = 480;
+
+const VOICE_TYPE_OPTIONS = [
+  { label: 'Warm Voice', value: 'warm' },
+  { label: 'Clarity Voice', value: 'clarity' },
+];
+const VITAL_TYPE_OPTIONS = [
+  { label: 'Blood Sugar', value: 'blood_sugar' },
+  { label: 'Blood Pressure', value: 'blood_pressure' },
+];
+const INPUT_METHOD_OPTIONS = [
+  { label: 'Camera Capture', value: 'camera' },
+  { label: 'Manual Entry', value: 'manual' },
+];
 
 export const CheckInHome = () => {
-  const { width } = useWindowDimensions();
-  const { state: settingsState } = useSettings();
+  const navigation = useNavigation();
   const { state, dispatch } = useAuth();
+  const { state: settingsState } = useSettings();
   const colors = useColors();
-  const tokens = useTokens();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= TABLET_BREAKPOINT;
   const user = state.user;
 
   const [voiceOn, setVoiceOn] = useState(true);
   const [voiceType, setVoiceType] = useState('warm');
-  const [vitalType, setVitalType] = useState('blood_sugar');
-  const [inputMethod, setInputMethod] = useState('camera');
+  const [vitalType, setVitalType] = useState<VitalType>('blood_sugar');
+  const [inputMethod, setInputMethod] = useState<VitalInputMethod>('camera');
   const [vitalValue, setVitalValue] = useState('');
-  const [isCalling, setIsCalling] = useState(false);
+  const [vitalError, setVitalError] = useState<string | undefined>(undefined);
+
+  // Today's check-in (loaded on mount). null = no check-in yet today; undefined = loading.
+  const [todayCheckIn, setTodayCheckIn] = useState<CheckIn | null | undefined>(undefined);
+  const [submittingStatus, setSubmittingStatus] = useState<CheckInStatus | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [savingVital, setSavingVital] = useState(false);
+  const [vitalSavedAt, setVitalSavedAt] = useState<number | null>(null);
 
   const { speak } = useVoiceAssistant(voiceOn);
 
-  // Greet user on load
+  // Greet on first mount.
   useEffect(() => {
-    const name = user?.name || 'Eleanor';
+    const name = user?.name?.split(' ')[0] || 'Eleanor';
     speak(`Good morning, ${name}. How are you today?`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch today's check-in once on mount. If one exists, the status buttons
+  // render in a disabled "already checked in" state.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const checkIn = await checkInsService.getTodayCheckIn();
+        if (!cancelled) setTodayCheckIn(checkIn);
+      } catch (err) {
+        // Non-fatal — leave it as undefined so buttons stay enabled. The user
+        // can still attempt a check-in; the API will reject duplicates.
+        // eslint-disable-next-line no-console
+        console.warn('Failed to load today check-in:', err);
+        if (!cancelled) setTodayCheckIn(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleLogout = () => {
@@ -35,479 +125,382 @@ export const CheckInHome = () => {
     dispatch({ type: 'LOGOUT' });
   };
 
-  const handleStatusReport = (status: 'ok' | 'help' | 'urgent') => {
-    const messages = {
+  /**
+   * Submit today's check-in. Optimistically `speak()`s the appropriate message
+   * before the network round-trip so the senior gets immediate feedback (the
+   * voice line was already the design); rolls back on error.
+   */
+  const handleStatusReport = async (status: CheckInStatus) => {
+    if (submittingStatus || todayCheckIn) return;
+
+    const messages: Record<CheckInStatus, string> = {
       ok: "I'm glad to hear you are doing well. Your status has been reported as OK.",
-      help: "I've notified your support circle that you need help. Stay calm, assistance is on the way.",
-      urgent: settingsState.urgentHelpConfig.autoCall 
-        ? "Alerting urgent help and initiating emergency call now." 
-        : "Alerting urgent help immediately. Help is coming now.",
+      needs_help:
+        "I've notified your support circle that you need help. Stay calm, assistance is on the way.",
+      urgent: settingsState.urgentHelpConfig.autoCall
+        ? 'Alerting urgent help and initiating emergency call now.'
+        : 'Alerting urgent help immediately. Help is coming now.',
     };
-    
     speak(messages[status]);
-    
-    if (status === 'urgent' && settingsState.urgentHelpConfig.autoCall) {
-      setTimeout(() => setIsCalling(true), 1500);
+
+    setSubmittingStatus(status);
+    setStatusError(null);
+    try {
+      const checkIn = await checkInsService.createCheckIn({ status });
+      setTodayCheckIn(checkIn);
+    } catch (err) {
+      setStatusError(extractApiError(err, 'Failed to submit check-in. Please try again.'));
+    } finally {
+      setSubmittingStatus(null);
     }
-    
-    console.log(`Reported status: ${status}`);
   };
+
+  /**
+   * Save a vital reading. Validates the value is a positive number; uses the
+   * default unit for the selected vital type.
+   */
+  const handleSaveReading = async () => {
+    const trimmed = vitalValue.trim();
+    if (!trimmed) {
+      setVitalError('Enter a reading.');
+      return;
+    }
+    const numericValue = Number(trimmed);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+      setVitalError('Enter a valid positive number.');
+      return;
+    }
+
+    setVitalError(undefined);
+    setSavingVital(true);
+    speak(`Saving your ${vitalType.replace('_', ' ')} reading of ${trimmed}`);
+
+    try {
+      await vitalsService.createVital({
+        vital_type: vitalType,
+        value: numericValue,
+        unit: DEFAULT_VITAL_UNIT[vitalType],
+        input_method: inputMethod,
+      });
+      setVitalValue('');
+      setVitalSavedAt(Date.now());
+    } catch (err) {
+      setVitalError(extractApiError(err, 'Failed to save reading. Please try again.'));
+    } finally {
+      setSavingVital(false);
+    }
+  };
+
+  /**
+   * Open the system camera so the senior can photograph their meter display.
+   *
+   * Implementation notes:
+   *   - Uses the OS camera app via `launchCameraAsync` — no in-app preview UI
+   *     to learn. Better for an older user base.
+   *   - Permission request is handled here at tap-time (just-in-time
+   *     permission pattern). If the user has already denied, we surface a
+   *     short message rather than silently failing.
+   *   - OCR is not yet wired. Once a photo is captured, we currently prompt
+   *     the user to type the reading manually with the photo as a reference.
+   *     When the backend Vision OCR endpoint ships, replace the manual-prompt
+   *     branch with a POST that returns the parsed digit string.
+   */
+  const handleScanVital = async () => {
+    speak('Opening camera to scan reading');
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        speak('Camera permission is needed to scan readings.');
+        Alert.alert(
+          'Camera permission needed',
+          'Please allow camera access from Settings, then tap Scan again. You can also type the reading manually for now.',
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.7,
+        allowsEditing: false,
+        // Sensitive data — store privately for the session only, never to the
+        // shared photo library.
+        cameraType: ImagePicker.CameraType.back,
+      });
+      if (result.canceled) return;
+
+      // OCR isn't built yet. For now, surface the captured photo path in a
+      // log (so QA can verify the camera flow), then nudge the user to enter
+      // the reading manually with the photo on screen to copy from.
+      const uri = result.assets[0]?.uri;
+      console.log('[scan] captured photo at', uri);
+      setInputMethod('camera');
+      speak('Photo captured. Please type the reading you see.');
+    } catch (err) {
+      console.warn('[scan] camera failed', err);
+      speak('Camera could not open. Please type the reading manually.');
+    }
+  };
+
+  // Map today's check-in status to the corresponding label + icon below.
+  const checkedIn = todayCheckIn != null;
+  const checkedInStatus = todayCheckIn?.status;
+
+  const greetingName = user?.name?.split(' ')[0] || 'Eleanor';
 
   return (
     <Screen style={{ backgroundColor: colors.background }}>
-      <ScrollView 
-        contentContainerStyle={[
-          styles.scrollContent, 
-          { padding: width > 600 ? 16 : 12 }
-        ]} 
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={[
-          styles.header,
-          { flexDirection: width > 600 ? 'row' : 'column', alignItems: width > 600 ? 'flex-start' : 'center' }
-        ]}>
-          <View style={styles.logoGroup}>
-            <NeuCard style={[styles.logoInner, { padding: spacing[8] }]}>
-              <HeartPulse size={24} color={colors.accent.primary} strokeWidth={2.5} />
-            </NeuCard>
-            <View>
-              <Text variant="subheading" color={colors.accent.primary} style={styles.logoText}>MEDTECH CARE</Text>
-              <Text variant="small" color={colors.text.secondary}>CareSignal</Text>
+        {/* ─────────── White header (logo + Logout + "Daily Checkin") ─── */}
+        <View style={styles.whiteHeader}>
+          <View
+            style={[
+              styles.headerInner,
+              isTablet && styles.headerInnerTablet,
+            ]}
+          >
+              <View style={styles.logoSlot}>
+                {__DEV__ ? (
+                  <TouchableOpacity
+                    activeOpacity={1}
+                    onLongPress={async () => {
+                      const { devTestPush } = await import(
+                        '../../../shared/notifications/devTestPush'
+                      );
+                      await devTestPush.selfRemote({
+                        title: 'CareSignal test',
+                        body: 'This came from devTestPush.selfRemote',
+                        channel: 'help',
+                        data: { type: 'help' },
+                      });
+                    }}
+                    delayLongPress={1500}
+                  >
+                    <LogoCard showSeparator={false} />
+                  </TouchableOpacity>
+                ) : (
+                  <LogoCard showSeparator={false} />
+                )}
+              </View>
+             <View style={styles.headerRow}> 
+              <RNText style={styles.dailyCheckin}>Daily Checkin</RNText>
+              <NeuButton
+                title="Pairing"
+                icon={LinkIcon}
+                size="sm"
+                // @ts-expect-error — Pairing exists on Elder stack
+                onPress={() => navigation.navigate('Pairing')}
+                style={styles.logoutBtn}
+              />
+              <NeuButton
+                title="Logout"
+                icon={LogOut}
+                size="sm"
+                onPress={handleLogout}
+                style={styles.logoutBtn}
+              />
             </View>
           </View>
-          
-          <View style={[
-            styles.headerActions,
-            { marginTop: width > 600 ? 6 : 16 }
-          ]}>
-            <View style={styles.roleBadge}>
-              <Text variant="small" color={colors.text.secondary}>test · Family App</Text>
-            </View>
-            <TouchableOpacity onPress={handleLogout}>
-              <NeuCard style={styles.logoutBtnInner}>
-                <LogOut size={18} color={colors.text.primary} />
-                <Spacer x="xs" />
-                <Text variant="small" style={{ fontWeight: '700' }}>Log Out</Text>
-              </NeuCard>
-            </TouchableOpacity>
-          </View>
+          {/* Soft fade at the bottom edge of the white header — the visual
+              boundary between header and page bg. */}
+          <View style={styles.shadowFade1} />
+          <View style={styles.shadowFade2} />
+          <View style={styles.shadowFade3} />
+          <View style={styles.shadowFade4} />
         </View>
 
-        <Spacer y="lg" />
+        {/* ─────────────────────── Page content ──────────────────────── */}
+        <View
+          style={[
+            styles.pageContent,
+            { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
+          ]}
+        >
+          <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
+          {/* ─────────────────────────── Greeting ────────────────────── */}
+          <RNText style={styles.greeting}>Good Morning, {greetingName}</RNText>
+          <Spacer y="xs" />
+          <RNText style={styles.greetingSub}>How are you doing today?</RNText>
+          <Spacer y="xs" />
+          <RNText style={styles.voiceReady}>Voice assistant is ready</RNText>
 
-        {/* Daily Check-In Welcome Card */}
-        <NeuCard style={styles.welcomeCard}>
-          <Text variant="body" color={colors.text.secondary}>Daily Check-In</Text>
-          <Text variant="display" style={styles.welcomeTitle}>Good Morning, {user?.name || 'Eleanor'}</Text>
-          <Text variant="heading" color={colors.text.secondary}>How are you today?</Text>
-          
           <Spacer y="md" />
-          
-          <View style={styles.voiceStatus}>
-            <View style={[styles.statusDot, { backgroundColor: '#CBD5E1' }]} />
-            <Spacer x="xs" />
-            <Text variant="caption" color={colors.text.secondary}>Voice assistant ready</Text>
-          </View>
 
-          <Spacer y="lg" />
-
-          <View style={styles.voiceControls}>
-            <TouchableOpacity 
-              style={[
-                styles.voiceToggle, 
-                { backgroundColor: voiceOn ? '#0F172A' : '#F1F5F9' }
-              ]}
+          {/* ─────────── Voice control card (neumorphic blue shadow) ─── */}
+          <NeuCard style={styles.voiceCard}>
+          <View style={styles.voiceRow}>
+            <NeuButton
+              title={voiceOn ? 'Voice ON' : 'Voice OFF'}
+              icon={Volume2}
+              variant={voiceOn ? 'filled' : 'primary'}
+              size="sm"
               onPress={() => {
-                const newState = !voiceOn;
-                setVoiceOn(newState);
-                if (newState) {
-                  speak("Voice assistance enabled", { force: true });
-                }
+                const next = !voiceOn;
+                setVoiceOn(next);
+                if (next) speak('Voice assistance enabled', { force: true });
               }}
-            >
-              <Volume2 size={18} color={voiceOn ? '#FFFFFF' : '#64748B'} />
-              <Spacer x="xs" />
-              <Text variant="small" color={voiceOn ? '#FFFFFF' : '#64748B'} style={{ fontWeight: '700' }}>
-                Voice {voiceOn ? 'On' : 'Off'}
-              </Text>
-            </TouchableOpacity>
-
-            <Spacer x="sm" />
-
-            <TouchableOpacity 
-              style={[styles.voiceToggle, { backgroundColor: '#E2E8F0', width: 80 }]}
-              onPress={() => speak("Testing 1 2 3", { force: true })}
-            >
-              <Text variant="small" color="#1A2138" style={{ fontWeight: '700' }}>Test Voice</Text>
-            </TouchableOpacity>
-
-            <Spacer x="md" />
-
-            <View style={styles.voiceSelectWrapper}>
-              <Select
-                options={[
-                  { label: 'Warm Voice', value: 'warm' },
-                  { label: 'Clarity Voice', value: 'clarity' }
-                ]}
+              style={styles.voiceBtn}
+            />
+            <NeuButton
+              title="Test Voice"
+              size="sm"
+              onPress={() => speak('Testing 1 2 3', { force: true })}
+              style={styles.voiceBtn}
+            />
+            <View style={styles.voiceSelectWrap}>
+              <SegmentedControl
+                options={VOICE_TYPE_OPTIONS}
                 value={voiceType}
                 onValueChange={setVoiceType}
-                placeholder="Voice type"
               />
             </View>
           </View>
-        </NeuCard>
-
-        <Spacer y="md" />
-
-        {/* Status Actions */}
-        <View style={styles.statusButtons}>
-          <NeuButton
-            variant="primary"
-            onPress={() => handleStatusReport('ok')}
-            title="I’m OK"
-            size="md"
-            style={styles.statusBtn}
-          />
-          <NeuButton
-            variant="primary"
-            onPress={() => handleStatusReport('help')}
-            title="I Need Help"
-            size="md"
-            style={styles.statusBtn}
-          />
-          <NeuButton
-            variant="primary"
-            onPress={() => handleStatusReport('urgent')}
-            title="Urgent Help"
-            size="md"
-            style={styles.statusBtn}
-          />
-        </View>
-
-        <Spacer y="md" />
-
-        {/* Vital Capture Card */}
-        <NeuCard style={styles.vitalsCard}>
-          <View style={styles.vitalsHeader}>
-            <View>
-              <Text variant="body" color={colors.text.secondary}>Optional Vital Capture</Text>
-              <Text variant="title" style={styles.vitalsTitle}>Capture blood sugar or blood pressure</Text>
-            </View>
-            <View style={styles.optionalBadge}>
-              <Text variant="small" color={colors.accent.primary} style={{ fontWeight: '700' }}>Optional</Text>
-            </View>
-          </View>
+          </NeuCard>
 
           <Spacer y="md" />
 
-          <View style={styles.vitalParams}>
-            <View style={{ flex: 1 }}>
-              <Select
-                label="Vital Type"
-                options={[
-                  { label: 'Blood Sugar', value: 'blood_sugar' },
-                  { label: 'Blood Pressure', value: 'blood_pressure' }
-                ]}
-                value={vitalType}
-                onValueChange={setVitalType}
-              />
+          {/* ─────────────────────── Status action buttons ────────────── */}
+          {checkedIn ? (
+            <View style={styles.alreadyCheckedIn}>
+              <RNText style={styles.alreadyCheckedInLabel}>
+                Today's status:{' '}
+                <RNText style={styles.alreadyCheckedInValue}>
+                  {checkedInStatus === 'ok'
+                    ? 'OK'
+                    : checkedInStatus === 'needs_help'
+                      ? 'Needs Help'
+                      : 'Urgent'}
+                </RNText>
+              </RNText>
+              <RNText style={styles.alreadyCheckedInHint}>
+                You've already checked in today. Come back tomorrow.
+              </RNText>
             </View>
-            <Spacer x="md" />
-            <View style={{ flex: 1 }}>
-              <Select
-                label="Input Method"
-                options={[
-                  { label: 'Camera Capture', value: 'camera' },
-                  { label: 'Manual Entry', value: 'manual' }
-                ]}
-                value={inputMethod}
-                onValueChange={setInputMethod}
-              />
-            </View>
-          </View>
-
-          <Spacer y="md" />
-
-          <View style={styles.vitalInputContainer}>
-            <View style={styles.inputArea}>
-              <View style={styles.inputRow}>
-                <View style={styles.cameraGuide}>
-                  <Camera size={20} color={colors.accent.primary} />
-                  <Text variant="small" color={colors.text.secondary} style={styles.cameraText}>Scan</Text>
-                </View>
-                <Spacer x="sm" />
-                <View style={{ flex: 1 }}>
-                  <Input 
-                    placeholder="e.g. 108"
-                    value={vitalValue}
-                    onChangeText={setVitalValue}
-                    style={styles.vitalInput}
-                  />
-                </View>
-              </View>
-              
-              <Spacer y="md" />
-              
+          ) : (
+            <>
               <NeuButton
-                title="Save Reading"
-                size="md"
-                onPress={() => {
-                  const type = vitalType.replace('_', ' ');
-                  speak(`Saving your ${type} reading of ${vitalValue || 'zero'}`);
-                  console.log('Saving vitals...');
-                }}
+                title="I’m OK"
+                icon={Smile}
+                size="lg"
+                loading={submittingStatus === 'ok'}
+                disabled={submittingStatus !== null}
+                onPress={() => handleStatusReport('ok')}
+                style={styles.statusBtn}
+              />
+              <Spacer y="md" />
+              <NeuButton
+                title="I Need Help"
+                icon={AlertTriangle}
+                size="lg"
+                loading={submittingStatus === 'needs_help'}
+                disabled={submittingStatus !== null}
+                onPress={() => handleStatusReport('needs_help')}
+                style={styles.statusBtn}
+              />
+              <Spacer y="md" />
+              <NeuButton
+                title="Urgent Help"
+                icon={BellRing}
+                size="lg"
+                loading={submittingStatus === 'urgent'}
+                disabled={submittingStatus !== null}
+                onPress={() => handleStatusReport('urgent')}
+                style={styles.statusBtn}
+              />
+              {statusError ? (
+                <>
+                  <Spacer y="sm" />
+                  <RNText style={styles.errorText}>{statusError}</RNText>
+                </>
+              ) : null}
+            </>
+          )}
+
+          <Spacer y="xl" />
+
+          {/* ─────────────────────── Vital capture section ────────────── */}
+          <RNText style={styles.vitalEyebrow}>Optional Vital Capture</RNText>
+          <Spacer y="xs" />
+          <RNText style={styles.vitalTitle}>
+            Capture blood sugar or blood pressure
+          </RNText>
+
+          <Spacer y="md" />
+
+          <View style={styles.vitalSelectsRow}>
+            <View style={styles.vitalCol}>
+              <RNText style={styles.selectLabel}>Vital Type</RNText>
+              <OutlinedSelect
+                options={VITAL_TYPE_OPTIONS}
+                value={vitalType}
+                onValueChange={(v) => setVitalType(v as VitalType)}
+                placeholder="Blood Sugar"
+                disabled={savingVital}
+              />
+            </View>
+            <View style={{ width: spacing[12] }} />
+            <View style={styles.vitalCol}>
+              <RNText style={styles.selectLabel}>Input Method</RNText>
+              <OutlinedSelect
+                options={INPUT_METHOD_OPTIONS}
+                value={inputMethod}
+                onValueChange={(v) => setInputMethod(v as VitalInputMethod)}
+                placeholder="Camera Capture"
+                disabled={savingVital}
               />
             </View>
           </View>
-        </NeuCard>
 
-        <Spacer y="md" />
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <TouchableOpacity onPress={() => speak("Replaying instructions. How are you today?")}>
-            <NeuCard style={styles.replayBtnInner}>
-              <Volume2 size={18} color={colors.text.primary} />
-              <Spacer x="xs" />
-              <Text variant="body">Replay Voice</Text>
-            </NeuCard>
-          </TouchableOpacity>
-        </View>
-        <Spacer y="xxl" />
-      </ScrollView>
-
-      {/* Emergency Call Modal */}
-      <Modal visible={isCalling} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.callCard, { backgroundColor: '#DC2626' }]}>
-            <View style={styles.callHeader}>
-              <Phone size={48} color="white" />
-              <Spacer y="lg" />
-              <Text variant="display" color="white">Emergency Call</Text>
-              <Text variant="heading" color="rgba(255,255,255,0.8)">Initiated via Auto-Call</Text>
+          <View style={styles.vitalInputRow}>
+            <View style={{ flex: 1 }}>
+              <OutlinedField
+                placeholder={`E.g. 108 ${DEFAULT_VITAL_UNIT[vitalType]}`}
+                value={vitalValue}
+                onChangeText={(v) => {
+                  setVitalValue(v);
+                  if (vitalError) setVitalError(undefined);
+                }}
+                keyboardType="numeric"
+                editable={!savingVital}
+                error={vitalError}
+              />
             </View>
-            
-            <View style={styles.callStatus}>
-              <View style={styles.pulseContainer}>
-                <View style={styles.pulseCircle} />
-              </View>
-              <Spacer y="md" />
-              <Text variant="title" color="white">Calling Dispatch...</Text>
-            </View>
+            <View style={{ width: spacing[12] }} />
+            <NeuButton
+              title="Scan"
+              icon={ScanLine}
+              size="md"
+              disabled={savingVital}
+              onPress={handleScanVital}
+              style={styles.scanBtn}
+            />
+          </View>
 
-            <TouchableOpacity 
-              style={styles.hangUpBtn} 
-              onPress={() => {
-                speak("Emergency call cancelled.");
-                setIsCalling(false);
-              }}
-            >
-              <X size={32} color="white" />
-              <Spacer y="xs" />
-              <Text variant="small" color="white" style={{ fontWeight: '700' }}>CANCEL</Text>
-            </TouchableOpacity>
+          <NeuButton
+            title="Save Reading"
+            icon={Save}
+            size="lg"
+            loading={savingVital}
+            disabled={!vitalValue.trim() || savingVital}
+            onPress={handleSaveReading}
+            style={styles.saveBtn}
+          />
+
+          {vitalSavedAt ? (
+            <>
+              <Spacer y="sm" />
+              <RNText style={styles.successText}>
+                Saved at {new Date(vitalSavedAt).toLocaleTimeString()}.
+              </RNText>
+            </>
+          ) : null}
+
+          <Spacer y="xxl" />
           </View>
         </View>
-      </Modal>
+      </ScrollView>
     </Screen>
   );
 };
 
-const styles = StyleSheet.create({
-  scrollContent: {
-    paddingTop: Platform.OS === 'ios' ? spacing[20] : spacing[40],
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  logoGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: -spacing[2],
-  },
-  logoInner: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 0,
-    marginRight: spacing[8],
-  },
-  logoText: {
-    fontWeight: '800',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing[6],
-  },
-  roleBadge: {
-    paddingHorizontal: spacing[12],
-    paddingVertical: spacing[8],
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: borderRadius.xl,
-    marginRight: spacing[8],
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-  },
-  logoutBtnInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[12],
-    paddingVertical: spacing[8],
-  },
-  welcomeCard: {
-    padding: spacing[24],
-  },
-  welcomeTitle: {
-    fontSize: 32,
-    marginTop: spacing[8],
-    marginBottom: spacing[4],
-  },
-  voiceStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  voiceControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  voiceToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[16],
-    height: 48,
-    borderRadius: borderRadius.md,
-  },
-  voiceSelectWrapper: {
-    flex: 1,
-  },
-  statusButtons: {
-    gap: spacing[16],
-  },
-  statusBtn: {
-    height: 80,
-    borderRadius: 24,
-  },
-  vitalsCard: {
-    padding: 24,
-  },
-  vitalsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  vitalsTitle: {
-    fontSize: 20,
-    marginTop: 4,
-    maxWidth: '85%', // Prevent overlap with badge
-  },
-  optionalBadge: {
-    backgroundColor: '#E6F4F1',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  vitalParams: {
-    flexDirection: 'row',
-  },
-  vitalInputContainer: {
-    width: '100%',
-  },
-  inputArea: {
-    width: '100%',
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cameraGuide: {
-    width: 60,
-    height: 90,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#008471',
-    borderRadius: 12,
-    backgroundColor: '#E6F4F1',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraText: {
-    fontSize: 10,
-    marginTop: 2,
-    fontWeight: '700',
-  },
-  vitalInput: {
-    height: 90,
-    fontSize: 32,
-    textAlign: 'center',
-    marginBottom: 0,
-  },
-  saveBtnFull: {
-    height: 56,
-    borderRadius: 16,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-  },
-  replayBtnInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  callCard: {
-    width: '100%',
-    borderRadius: 32,
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: '70%',
-  },
-  callHeader: {
-    alignItems: 'center',
-  },
-  callStatus: {
-    alignItems: 'center',
-  },
-  pulseContainer: {
-    width: 100,
-    height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pulseCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.4)',
-  },
-  hangUpBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-  }
-});

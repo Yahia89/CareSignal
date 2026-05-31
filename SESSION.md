@@ -46,6 +46,28 @@ Format:
 
 <!-- Add new sessions above this line -->
 
+## 2026-05-08 — Phase 1: Senior daily flow lit up
+**Who:** Claude (Opus 4.7) with Isha
+**Branch:** `feature/design-remodification`
+**Goal:** First phase of the integration plan — make CheckInHome actually work end-to-end against the real API. Buttons previously only `speak()`d.
+**Done:** (uncommitted; awaiting batch commit)
+- Added types: `CheckInStatus`, `CheckIn`, `CreateCheckInPayload`, `VitalType`, `VitalInputMethod`, `Vital`, `CreateVitalPayload`, `DEFAULT_VITAL_UNIT` map, `PaginationMeta`, `PaginatedEnvelope<T>`.
+- New `src/services/checkins.service.ts` — `createCheckIn`, `getTodayCheckIn` (returns null if no check-in yet), `listCheckIns` paginated.
+- New `src/services/vitals.service.ts` — `createVital`, `listVitals` paginated with optional `vital_type` filter.
+- `CheckInHome` rewired:
+  - On mount: `getTodayCheckIn()` populates `todayCheckIn` state. If non-null, the three status buttons are replaced with an "Already checked in today" card showing the recorded status (OK / Needs Help / Urgent). On error, falls back to enabled buttons (server will reject duplicates).
+  - Status buttons (`I'm OK` / `I Need Help` / `Urgent Help`): each shows `loading` while its own `POST /check-ins` is in flight; the other two are disabled during submit. Voice line still plays optimistically. On success, sets `todayCheckIn` so buttons swap to the disabled card. On error, surfaces inline message via `extractErrorMessage` helper.
+  - `Save Reading`: validates positive-numeric input via `Number.isFinite() && > 0`, posts `{ vital_type, value: number, unit, input_method }` with `unit` defaulted from `DEFAULT_VITAL_UNIT[vitalType]`. Shows inline error on validation/network failure. Shows "Saved at HH:MM:SS" success message on resolve.
+  - `vital_type` and `input_method` selects now type-cast to the proper enum types.
+  - Placeholder for the value input now shows the unit (e.g. "E.g. 108 mg/dL").
+- API.md status table flipped: 11 → **16 endpoints wired** (+5: `POST /check-ins`, `GET /check-ins`, `GET /check-ins/today`, `POST /vitals`, `GET /vitals` — the GETs marked "service wired, UI binding pending").
+- PLAN.md: Phase 1 marked ✅, all acceptance checks ticked.
+- Verified: `tsc --noEmit` clean; `expo export --platform android` bundles successfully.
+**Left off at:** Phase 1 complete. Phase 2 (FamilyDashboard live data + redesign) is the obvious next pick. Awaiting user's go-ahead.
+**Open questions / blockers:** None code-side. Untested against the live API on a simulator — will surface UX tweaks (e.g. unit format, error string formatting) only on real exercise.
+
+
+
 ## 2026-05-08 — Auth screens to exact Figma values + real logo asset
 **Who:** Claude (Opus 4.7) with Isha
 **Branch:** `feature/design-remodification`

@@ -1,16 +1,31 @@
 import { useCallback, useState } from 'react';
 import { authService } from '../services/auth.service';
-import { ForgotPasswordResponse } from '../types';
 
 interface UseForgotPasswordReturn {
   loading: boolean;
   error: string | null;
   success: boolean;
   message: string | null;
+  /**
+   * Request a password-reset email. Always returns `true` on a 2xx response —
+   * per the API spec the server doesn't reveal whether the email is registered
+   * (OWASP A07), so we treat any 2xx as "email sent if address was registered".
+   */
   forgotPassword: (email: string) => Promise<boolean>;
-  resetPassword: (token: string, password: string, passwordConfirm: string) => Promise<boolean>;
+  /**
+   * Set a new password using the reset deep-link token. The `tokenHash` comes
+   * from the URL query string of the `caresignal://auth/confirm?token_hash=…&type=recovery`
+   * deep link the user clicks in their email.
+   */
+  resetPassword: (
+    tokenHash: string,
+    password: string,
+    passwordConfirm: string
+  ) => Promise<boolean>;
   reset: () => void;
 }
+
+import { extractApiError as extractError } from '../shared/utils';
 
 export function useForgotPassword(): UseForgotPasswordReturn {
   const [loading, setLoading] = useState(false);
@@ -19,25 +34,20 @@ export function useForgotPassword(): UseForgotPasswordReturn {
   const [message, setMessage] = useState<string | null>(null);
 
   const forgotPassword = useCallback(async (email: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+    setMessage(null);
+
     try {
-      setLoading(true);
-      setError(null);
-      setSuccess(false);
-      setMessage(null);
-
-      const response = await authService.forgotPassword({ email });
-
-      if (response.success) {
-        setSuccess(true);
-        setMessage(response.message || 'Password reset email sent. Please check your inbox.');
-        return true;
-      } else {
-        setError(response.message || 'Failed to send reset email');
-        return false;
-      }
+      await authService.forgotPassword({ email });
+      setSuccess(true);
+      setMessage(
+        'If that email is registered, we just sent a reset link. Check your inbox.'
+      );
+      return true;
     } catch (err: any) {
-      const errorMsg = err.message || 'An error occurred';
-      setError(errorMsg);
+      setError(extractError(err, 'Failed to request password reset.'));
       return false;
     } finally {
       setLoading(false);
@@ -45,31 +55,33 @@ export function useForgotPassword(): UseForgotPasswordReturn {
   }, []);
 
   const resetPassword = useCallback(
-    async (token: string, password: string, passwordConfirm: string): Promise<boolean> => {
+    async (
+      tokenHash: string,
+      password: string,
+      passwordConfirm: string
+    ): Promise<boolean> => {
+      setLoading(true);
+      setError(null);
+      setSuccess(false);
+      setMessage(null);
+
+      if (password !== passwordConfirm) {
+        setError('Passwords do not match');
+        setLoading(false);
+        return false;
+      }
+
       try {
-        setLoading(true);
-        setError(null);
-        setSuccess(false);
-        setMessage(null);
-
-        if (password !== passwordConfirm) {
-          setError('Passwords do not match');
-          return false;
-        }
-
-        const response = await authService.resetPassword({ token, password, password_confirm: passwordConfirm });
-
-        if (response.success) {
-          setSuccess(true);
-          setMessage(response.message || 'Password reset successful. Please log in with your new password.');
-          return true;
-        } else {
-          setError(response.message || 'Failed to reset password');
-          return false;
-        }
+        await authService.resetPassword({
+          token_hash: tokenHash,
+          type: 'recovery',
+          password,
+        });
+        setSuccess(true);
+        setMessage('Password updated. You can now log in with your new password.');
+        return true;
       } catch (err: any) {
-        const errorMsg = err.message || 'An error occurred';
-        setError(errorMsg);
+        setError(extractError(err, 'Failed to reset password.'));
         return false;
       } finally {
         setLoading(false);
@@ -85,13 +97,5 @@ export function useForgotPassword(): UseForgotPasswordReturn {
     setMessage(null);
   }, []);
 
-  return {
-    loading,
-    error,
-    success,
-    message,
-    forgotPassword,
-    resetPassword,
-    reset,
-  };
+  return { loading, error, success, message, forgotPassword, resetPassword, reset };
 }

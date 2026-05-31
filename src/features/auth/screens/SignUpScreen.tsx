@@ -20,6 +20,7 @@ import {
   getShadowStyle,
   colors as staticColors,
 } from '../../../shared/design';
+import { interFamilyForWeight } from '../../../shared/design/tokens/utils';
 import {
   validateForm,
   required,
@@ -29,7 +30,7 @@ import {
   personName,
   type FormErrors,
 } from '../../../shared/utils/validators';
-import { LogoCard, OutlinedField, OutlinedSelect } from '../components';
+import { LogoCard, OutlinedField, OutlinedSelect } from '../../../shared/components';
 import { uiRoleToApi } from '../services/roleMapping';
 
 const FORM_MAX_WIDTH = 480;
@@ -246,16 +247,16 @@ const styles = StyleSheet.create({
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
 
   // Eyebrow + subtitle — exact Figma values: 14/400/#333333, lh 16.6
-  eyebrow: { fontSize: 14, lineHeight: 16.6, fontWeight: '400', color: '#333333' },
+  eyebrow: { fontSize: 14, lineHeight: 16.6, fontFamily: interFamilyForWeight(400), color: '#333333' },
   // Title — exact Figma: 23/700/#36597D, lh 100%
   title: {
     fontSize: 23,
     lineHeight: 26,
-    fontWeight: '700',
+    fontFamily: interFamilyForWeight(700),
     color: staticColors.text.primary,
     letterSpacing: 0,
   },
-  subtitle: { fontSize: 14, lineHeight: 16.6, fontWeight: '400', color: '#333333' },
+  subtitle: { fontSize: 14, lineHeight: 16.6, fontFamily: interFamilyForWeight(400), color: '#333333' },
 
   nameRow: { flexDirection: 'row', alignItems: 'flex-start' },
   nameCol: { flex: 1 },
@@ -275,10 +276,14 @@ const styles = StyleSheet.create({
   },
 
   footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  footerText: { fontSize: 15, color: staticColors.text.primary },
+  footerText: {
+    fontSize: 15,
+    fontFamily: interFamilyForWeight(400),
+    color: staticColors.text.primary,
+  },
   footerLink: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: interFamilyForWeight(700),
     color: staticColors.text.primary,
     textDecorationLine: 'underline',
   },

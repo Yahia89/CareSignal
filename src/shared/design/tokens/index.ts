@@ -80,7 +80,7 @@ export const shadows = {
     // Subtle shadows (flat, minimal depth)
     xs: {
       light: {
-        shadowColor: '#000000',
+        shadowColor: '#5B7FA8',
         shadowOffset: { width: 2, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 4,
@@ -98,7 +98,7 @@ export const shadows = {
     // Small shadows (slight depth)
     sm: {
       light: {
-        shadowColor: '#000000',
+        shadowColor: '#5B7FA8',
         shadowOffset: { width: 4, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
@@ -116,11 +116,11 @@ export const shadows = {
     // Medium shadows (moderate depth) - Most common
     md: {
       light: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 6, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        elevation: 3,
+        shadowColor: '#5B7FA8',
+        shadowOffset: { width: 4, height: 6 },
+        shadowOpacity: 0.22,
+        shadowRadius: 14,
+        elevation: 5,
       },
       dark: {
         shadowColor: '#FFFFFF',
@@ -134,11 +134,11 @@ export const shadows = {
     // Large shadows (pronounced depth)
     lg: {
       light: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 8, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 16,
-        elevation: 4,
+        shadowColor: '#5B7FA8',
+        shadowOffset: { width: 6, height: 10 },
+        shadowOpacity: 0.28,
+        shadowRadius: 20,
+        elevation: 7,
       },
       dark: {
         shadowColor: '#FFFFFF',
@@ -152,7 +152,7 @@ export const shadows = {
     // Extra large shadows (deep depth)
     xl: {
       light: {
-        shadowColor: '#000000',
+        shadowColor: '#5B7FA8',
         shadowOffset: { width: 12, height: 12 },
         shadowOpacity: 0.18,
         shadowRadius: 20,
@@ -231,15 +231,20 @@ export const borderRadius = {
 // TYPOGRAPHY TOKENS
 // ============================================================================
 
+/**
+ * Inter is loaded via @expo-google-fonts/inter (see App.tsx). Each weight
+ * is a *separate* family in RN — `fontWeight` doesn't synthesize bold for
+ * custom fonts. Use the helper `interFamilyForWeight(weight)` below, or
+ * pick one of the named entries directly.
+ */
 export const typography = {
-  // Figma uses "Segoe UI". Microsoft licenses it — we don't bundle it.
-  // RN's `fontFamily` only takes one name (no fallback chain), so on devices
-  // that don't have it (= every iOS device, most Androids), we let
-  // fontFamily be undefined and the OS default kicks in (SF Pro / Roboto).
-  // To get the exact Figma rendering: add expo-font + Inter (free, very
-  // close to Segoe UI) or license Segoe UI directly. See MEMORY.md.
   fontFamily: {
-    default: undefined as string | undefined,
+    default: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semibold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
+    extrabold: 'Inter_800ExtraBold',
+    black: 'Inter_900Black',
     mono: 'Courier New',
   },
 

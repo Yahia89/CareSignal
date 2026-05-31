@@ -275,9 +275,41 @@ export const createTypography = (
   size: keyof typeof tokens.typography.fontSize = 'base',
   weight: keyof typeof tokens.typography.fontWeight = 'normal'
 ): TextStyle => {
+  const numericWeight = tokens.typography.fontWeight[weight];
   return {
     fontSize: tokens.typography.fontSize[size],
-    fontWeight: String(tokens.typography.fontWeight[weight]) as TextStyle['fontWeight'],
-    fontFamily: tokens.typography.fontFamily.default,
+    fontFamily: interFamilyForWeight(numericWeight),
   };
+};
+
+/**
+ * Map a numeric font weight (100–900) or a CSS-name ('normal' | 'bold') to
+ * the matching Inter family registered by `@expo-google-fonts/inter`.
+ *
+ * RN's custom-font handling does NOT synthesize bold — you have to use the
+ * exact family name per weight. So instead of styling text as
+ *   { fontFamily: 'Inter_400Regular', fontWeight: '700' }   ❌  // stays Regular
+ * use
+ *   { fontFamily: interFamilyForWeight(700) }               ✅
+ *
+ * Falls back to Regular for unknown values.
+ */
+export const interFamilyForWeight = (
+  weight: number | string | undefined
+): string => {
+  const w =
+    typeof weight === 'string'
+      ? weight === 'bold'
+        ? 700
+        : weight === 'normal'
+          ? 400
+          : parseInt(weight, 10) || 400
+      : weight ?? 400;
+
+  if (w >= 900) return 'Inter_900Black';
+  if (w >= 800) return 'Inter_800ExtraBold';
+  if (w >= 700) return 'Inter_700Bold';
+  if (w >= 600) return 'Inter_600SemiBold';
+  if (w >= 500) return 'Inter_500Medium';
+  return 'Inter_400Regular';
 };

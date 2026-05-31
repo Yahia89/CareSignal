@@ -1,1 +1,0 @@
-export { GenerateInviteScreen } from './GenerateInviteScreen';

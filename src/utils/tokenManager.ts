@@ -1,6 +1,6 @@
 import { storage } from './storage';
 import { authService } from '../services/auth.service';
-import { setAuthToken } from '../services/api';
+import { setAuthToken, setRefreshCallback } from '../services/api';
 
 interface DecodedToken {
   exp?: number;
@@ -128,3 +128,8 @@ export const clearTokenRefreshTimer = (timerId: NodeJS.Timeout | null) => {
     clearTimeout(timerId);
   }
 };
+
+// Register `refreshAccessToken` with the api client so any 401 response
+// triggers a refresh + retry. Module-load side effect — runs once when
+// tokenManager is first imported (which happens at app boot via AuthContext).
+setRefreshCallback(refreshAccessToken);

@@ -1,245 +1,103 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, ScrollView, Text as RNText, ActivityIndicator } from 'react-native';
+import { forgotPasswordStyles as styles } from './ForgotPasswordScreen.styles';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, Text, Spacer, Input } from '../../../shared/components';
-import { NeuButton, NeuCard, useColors, useTokens, spacing, borderRadius, getShadowStyle } from '../../../shared/design';
+import { ArrowLeft, MailCheck } from 'lucide-react-native';
+import { Screen, Input, LogoCard } from '../../../shared/components';
+import { spacing, figmaColor, figmaFont, figmaRadius } from '../../../shared/design';
+import { interFamilyForWeight } from '../../../shared/design/tokens/utils';
 import { useForgotPassword } from '../../../hooks/useForgotPassword';
+import { isEmail } from '../../../shared/utils/validators';
 
 export const ForgotPasswordScreen = () => {
   const navigation = useNavigation<any>();
-  const colors = useColors();
-  const tokens = useTokens();
   const { loading, error, success, message, forgotPassword } = useForgotPassword();
-
-  const [step, setStep] = useState<'request' | 'reset'>('request');
   const [email, setEmail] = useState('');
-  const [resetToken, setResetToken] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [touched, setTouched] = useState(false);
 
-  const handleRequestReset = async () => {
-    if (!email.trim()) {
-      return;
-    }
+  const emailError = touched && !isEmail(email) ? 'Enter a valid email address.' : null;
 
-    const result = await forgotPassword(email);
-    if (result) {
-      setStep('reset');
-    }
+  const submit = async () => {
+    setTouched(true);
+    if (!isEmail(email)) return;
+    await forgotPassword(email.trim());
   };
 
   return (
-    <Screen style={styles.container}>
-      {step === 'request' ? (
-        <View style={styles.content}>
-          <Text variant="title" style={styles.title}>
-            Reset Password
-          </Text>
-
-          <Spacer y="md" />
-
-          <Text variant="body" color={colors.text.secondary} style={styles.description}>
-            Enter your email address and we'll send you instructions to reset your password.
-          </Text>
-
-          <Spacer y="lg" />
-
-          <Input
-            placeholder="Email address"
-            value={email}
-            onChangeText={setEmail}
-            editable={!loading}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          {error && (
-            <>
-              <Spacer y="md" />
-              <NeuCard
-                style={{
-                  backgroundColor: colors.semantic.error + '20',
-                  borderLeftWidth: 4,
-                  borderLeftColor: colors.semantic.error,
-                }}
-              >
-                <Text color={colors.semantic.error}>{error}</Text>
-              </NeuCard>
-            </>
-          )}
-
-          {success && message && (
-            <>
-              <Spacer y="md" />
-              <NeuCard
-                style={{
-                  backgroundColor: colors.semantic.success + '20',
-                  borderLeftWidth: 4,
-                  borderLeftColor: colors.semantic.success,
-                }}
-              >
-                <Text color={colors.semantic.success}>{message}</Text>
-              </NeuCard>
-            </>
-          )}
-
-          <Spacer y="lg" />
-
-          <NeuButton
-            title={loading ? "Sending…" : "Send Reset Link"}
-            onPress={handleRequestReset}
-            disabled={!email.trim() || loading}
-            loading={loading}
-            size="md"
-          />
-
-          <Spacer y="md" />
-
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text
-              variant="caption"
-              style={styles.backLink}
-              color={colors.accent.primary}
-            >
-              Back to Login
-            </Text>
-          </TouchableOpacity>
+    <Screen style={{ backgroundColor: figmaColor.pageBg, padding: 0 }}>
+      <View style={styles.header}>
+        <View style={styles.logoSlot}>
+          <LogoCard showSeparator={false} />
         </View>
-      ) : (
-        <View style={styles.content}>
-          <Text variant="title" style={styles.title}>
-            Reset Your Password
-          </Text>
+        <TouchableOpacity style={styles.backRow} onPress={() => navigation.goBack()} hitSlop={8}>
+          <ArrowLeft size={22} color={figmaColor.titleNavy} strokeWidth={2.5} />
+          <RNText style={styles.headerTitle}>Reset Password</RNText>
+        </TouchableOpacity>
+        <View style={styles.shadowFade1} />
+        <View style={styles.shadowFade2} />
+      </View>
 
-          <Spacer y="md" />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {success ? (
+          <View style={[styles.card, styles.successCard]}>
+            <MailCheck size={28} color={figmaColor.green} strokeWidth={2} />
+            <View style={{ height: spacing[12] }} />
+            <RNText style={styles.h1}>Check your email</RNText>
+            <View style={{ height: spacing[8] }} />
+            <RNText style={styles.bodyMuted}>
+              {message ?? "We sent a password reset link to your inbox. Tap it to set a new password."}
+            </RNText>
+            <View style={{ height: spacing[20] }} />
+            <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.primaryBtn}>
+              <RNText style={styles.primaryBtnText}>Back to Login</RNText>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <RNText style={styles.eyebrow}>Forgot your password?</RNText>
+            <RNText style={styles.heading}>Enter your email and we'll send a reset link</RNText>
 
-          <Text variant="body" color={colors.text.secondary} style={styles.description}>
-            Check your email for the reset link. Enter the token and your new password below.
-          </Text>
+            <View style={{ height: spacing[20] }} />
 
-          <Spacer y="lg" />
+            <Input
+              placeholder="Email address"
+              value={email}
+              onChangeText={(t) => { setEmail(t); if (touched) setTouched(false); }}
+              editable={!loading}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              {...(emailError ? { error: emailError } : {})}
+            />
 
-          <Input
-            placeholder="Reset token from email"
-            value={resetToken}
-            onChangeText={setResetToken}
-            editable={!loading}
-            autoCapitalize="none"
-          />
+            {error && (
+              <>
+                <View style={{ height: spacing[12] }} />
+                <View style={[styles.card, { borderLeftWidth: 4, borderLeftColor: figmaColor.red }]}>
+                  <RNText style={[styles.bodyMuted, { color: figmaColor.red }]}>{error}</RNText>
+                </View>
+              </>
+            )}
 
-          <Spacer y="md" />
+            <View style={{ height: spacing[24] }} />
 
-          <Input
-            placeholder="New password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
-
-          <Spacer y="md" />
-
-          <Input
-            placeholder="Confirm password"
-            value={passwordConfirm}
-            onChangeText={setPasswordConfirm}
-            secureTextEntry
-            editable={!loading}
-          />
-
-          {error && (
-            <>
-              <Spacer y="md" />
-              <NeuCard
-                style={{
-                  backgroundColor: colors.semantic.error + '20',
-                  borderLeftWidth: 4,
-                  borderLeftColor: colors.semantic.error,
-                }}
-              >
-                <Text color={colors.semantic.error}>{error}</Text>
-              </NeuCard>
-            </>
-          )}
-
-          {success && message && (
-            <>
-              <Spacer y="md" />
-              <NeuCard
-                style={{
-                  backgroundColor: colors.semantic.success + '20',
-                  borderLeftWidth: 4,
-                  borderLeftColor: colors.semantic.success,
-                }}
-              >
-                <Text color={colors.semantic.success}>{message}</Text>
-                <Spacer y="sm" />
-                <NeuButton
-                  title="Back to Login"
-                  size="sm"
-                  onPress={() => {
-                    setStep('request');
-                    setEmail('');
-                    setResetToken('');
-                    setPassword('');
-                    setPasswordConfirm('');
-                  }}
-                />
-              </NeuCard>
-            </>
-          )}
-
-          {!success && (
-            <>
-              <Spacer y="lg" />
-
-              <NeuButton
-                title={loading ? "Resetting…" : "Reset Password"}
-                onPress={async () => {
-                  await forgotPassword(email);
-                }}
-                disabled={!resetToken.trim() || !password.trim() || !passwordConfirm.trim() || loading}
-                loading={loading}
-                size="md"
-              />
-            </>
-          )}
-
-          <Spacer y="md" />
-
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text
-              variant="caption"
-              style={styles.backLink}
-              color={colors.accent.primary}
+            <TouchableOpacity
+              onPress={submit}
+              disabled={loading || !email.trim()}
+              style={[styles.primaryBtn, (loading || !email.trim()) && { opacity: 0.6 }]}
             >
-              Back to Login
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+              {loading ? <ActivityIndicator color={figmaColor.textInverse} /> : <RNText style={styles.primaryBtnText}>Send reset link</RNText>}
+            </TouchableOpacity>
+
+            <View style={{ height: spacing[16] }} />
+
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.linkBtn}>
+              <RNText style={styles.linkBtnText}>Back to Login</RNText>
+            </TouchableOpacity>
+          </>
+        )}
+      </ScrollView>
     </Screen>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  content: {
-    paddingHorizontal: spacing[20],
-    paddingVertical: spacing[40],
-  },
-  title: {
-    textAlign: 'center',
-    marginBottom: spacing[8],
-  },
-  description: {
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  backLink: {
-    textAlign: 'center',
-  },
-});

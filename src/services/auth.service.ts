@@ -2,13 +2,13 @@ import apiClient from './api';
 import {
   ApiEnvelope,
   ForgotPasswordPayload,
-  ForgotPasswordResponse,
   LoginPayload,
   Profile,
   RefreshTokenPayload,
   ResetPasswordPayload,
   Session,
   SignupPayload,
+  UpdateProfilePayload,
   VerifyEmailPayload,
 } from '../types';
 
@@ -43,6 +43,7 @@ export const authService = {
   /** POST /auth/login → 200 with Session. */
   login: async (payload: LoginPayload): Promise<Session> => {
     const response = await apiClient.post<ApiEnvelope<Session>>('/auth/login', payload);
+    console.log('Login response:', response.data);
     return unwrap(response.data);
   },
 
@@ -53,6 +54,7 @@ export const authService = {
    */
   verifyEmail: async (payload: VerifyEmailPayload): Promise<Session> => {
     const response = await apiClient.post<ApiEnvelope<Session>>('/auth/verify-email', payload);
+    console.log('Verify email response:', response.data);
     return unwrap(response.data);
   },
 
@@ -63,26 +65,46 @@ export const authService = {
 
   /** GET /profiles/me — name + role + plan etc. (requires bearer token). */
   getProfile: async (): Promise<Profile> => {
-    const response = await apiClient.get<ApiEnvelope<Profile>>('/profiles/me');
+    try {
+      const response = await apiClient.get<ApiEnvelope<Profile>>('/profiles/me');
+      console.log('[profiles/me] ←', { status: response.status, body: response.data });
+      return unwrap(response.data);
+    } catch (err: any) {
+      console.warn('[profiles/me] ✗', {
+        status: err?.response?.status,
+        statusText: err?.response?.statusText,
+        body: err?.response?.data,
+        url: err?.config?.url,
+        method: err?.config?.method,
+        message: err?.message,
+      });
+      throw err;
+    }
+  },
+
+  /** PATCH /profiles/me — partial update (first_name and/or last_name). */
+  updateProfile: async (payload: UpdateProfilePayload): Promise<Profile> => {
+    const response = await apiClient.patch<ApiEnvelope<Profile>>('/profiles/me', payload);
     return unwrap(response.data);
   },
 
-  /** POST /auth/forgot-password */
-  forgotPassword: async (payload: ForgotPasswordPayload): Promise<ForgotPasswordResponse> => {
-    const response = await apiClient.post<ApiEnvelope<ForgotPasswordResponse>>(
-      '/auth/forgot-password',
-      payload
-    );
-    return unwrap(response.data);
+  /**
+   * POST /auth/forgot-password
+   * Spec: always 200 — never reveals whether the email is registered.
+   * No useful response body. We treat any 2xx as success.
+   * Axios throws on 4xx/5xx, which we let propagate (rate limit, validation).
+   */
+  forgotPassword: async (payload: ForgotPasswordPayload): Promise<void> => {
+    await apiClient.post('/auth/forgot-password', payload);
   },
 
-  /** POST /auth/reset-password */
-  resetPassword: async (payload: ResetPasswordPayload): Promise<ForgotPasswordResponse> => {
-    const response = await apiClient.post<ApiEnvelope<ForgotPasswordResponse>>(
-      '/auth/reset-password',
-      payload
-    );
-    return unwrap(response.data);
+  /**
+   * POST /auth/reset-password
+   * `token_hash` + `type: 'recovery'` come from the password-reset deep link:
+   *   caresignal://auth/confirm?token_hash=xxx&type=recovery
+   */
+  resetPassword: async (payload: ResetPasswordPayload): Promise<void> => {
+    await apiClient.post('/auth/reset-password', payload);
   },
 
   /**

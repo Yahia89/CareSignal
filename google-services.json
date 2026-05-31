@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "220162802458",
+    "project_id": "caresignal-4f621",
+    "storage_bucket": "caresignal-4f621.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220162802458:android:4f524895776b1c6258e2a3",
+        "android_client_info": {
+          "package_name": "com.medtechcare.caresignal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2BOU5425jWMnX1SibDuSOBlC1juPV2VQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

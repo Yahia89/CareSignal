@@ -20,32 +20,24 @@ import {
   getShadowStyle,
   colors as staticColors,
 } from '../../../shared/design';
+import { interFamilyForWeight } from '../../../shared/design/tokens/utils';
 import {
   validateForm,
   required,
   isEmail,
-  oneOf,
   type FormErrors,
 } from '../../../shared/utils/validators';
-import { LogoCard, OutlinedField, OutlinedSelect } from '../components';
+import { LogoCard, OutlinedField } from '../../../shared/components';
 
 const FORM_MAX_WIDTH = 480;
 const TABLET_BREAKPOINT = 768;
 
-const ACCOUNT_TYPE_OPTIONS = [
-  { label: 'Family Account', value: 'family' as const },
-  { label: 'Senior Account', value: 'elder' as const },
-];
-
-type Role = (typeof ACCOUNT_TYPE_OPTIONS)[number]['value'];
-
 interface LoginForm {
   email: string;
   password: string;
-  role: Role;
 }
 
-const initialForm: LoginForm = { email: '', password: '', role: 'family' };
+const initialForm: LoginForm = { email: '', password: '' };
 
 export const LoginScreen = () => {
   const navigation = useNavigation<any>();
@@ -67,11 +59,8 @@ export const LoginScreen = () => {
 
   const handleLogin = async () => {
     const { valid, errors: validationErrors } = validateForm<LoginForm>(form, {
-      // On login we only validate format/presence — no strength rules
-      // (the user may have an old password from before any rule existed).
       email: [required('Email is required'), isEmail()],
       password: required('Password is required'),
-      role: oneOf(ACCOUNT_TYPE_OPTIONS.map((o) => o.value), 'Choose an account type'),
     });
 
     if (!valid) {
@@ -85,7 +74,6 @@ export const LoginScreen = () => {
     const result = await login(form.email.trim(), form.password);
 
     setLoading(false);
-    // On success: RootNavigator switches stacks automatically.
     if (!result.ok) setSubmitError(result.error);
   };
 
@@ -96,16 +84,19 @@ export const LoginScreen = () => {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
-          ]}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
-            <LogoCard />
+          <LogoCard />
 
+          <View
+            style={[
+              styles.formPad,
+              { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
+            ]}
+          >
+          <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
             <Spacer y="lg" />
 
             <Text style={styles.title}>Login for Care Signal</Text>
@@ -143,14 +134,15 @@ export const LoginScreen = () => {
               onSubmitEditing={handleLogin}
             />
 
-            <OutlinedSelect
-              options={ACCOUNT_TYPE_OPTIONS}
-              value={form.role}
-              onValueChange={(v) => setField('role', v as Role)}
-              placeholder="Family Account"
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ForgotPassword')}
+              activeOpacity={0.7}
+              style={styles.forgotRow}
               disabled={loading}
-              error={errors.role}
-            />
+              hitSlop={8}
+            >
+              <Text style={styles.forgotLink}>Forgot password?</Text>
+            </TouchableOpacity>
 
             {submitError ? (
               <>
@@ -178,9 +170,10 @@ export const LoginScreen = () => {
               style={styles.footerRow}
               disabled={loading}
             >
-              <Text style={styles.footerText}>Don’t have an account? </Text>
+              <Text style={styles.footerText}>Don't have an account? </Text>
               <Text style={styles.footerLink}>Sign up</Text>
             </TouchableOpacity>
+          </View>
           </View>
 
           <Spacer y="xxl" />
@@ -192,22 +185,22 @@ export const LoginScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingTop: spacing[24],
     paddingBottom: spacing[48],
+  },
+  formPad: {
+    paddingTop: spacing[0],
   },
   constrain: { width: '100%', alignSelf: 'center' },
   constrainTablet: { maxWidth: FORM_MAX_WIDTH },
 
-  // Title — exact Figma: 23/700/#36597D, lh 100%
   title: {
     fontSize: 23,
     lineHeight: 26,
-    fontWeight: '700',
+    fontFamily: interFamilyForWeight(700),
     color: staticColors.text.primary,
     letterSpacing: 0,
   },
-  // Subtitle — exact Figma: 14/400/#333333, lh 16.6
-  subtitle: { fontSize: 14, lineHeight: 16.6, fontWeight: '400', color: '#333333' },
+  subtitle: { fontSize: 14, lineHeight: 16.6, fontFamily: interFamilyForWeight(400), color: '#333333' },
 
   submitError: {
     fontSize: 13,
@@ -216,8 +209,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Pill button — bumped to lg shadow so the neumorphic lift is unmistakable
-  // against the soft blue-gray background.
   submitBtn: {
     width: '100%',
     minHeight: 58,
@@ -225,11 +216,26 @@ const styles = StyleSheet.create({
     ...getShadowStyle('lg'),
   },
 
+  forgotRow: {
+    alignSelf: 'flex-end',
+    paddingVertical: spacing[4],
+    marginTop: spacing[2],
+  },
+  forgotLink: {
+    fontSize: 14,
+    fontFamily: interFamilyForWeight(600),
+    color: staticColors.text.primary,
+    textDecorationLine: 'underline',
+  },
   footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  footerText: { fontSize: 15, color: staticColors.text.primary },
+  footerText: {
+    fontSize: 16,
+    fontFamily: interFamilyForWeight(400),
+    color: staticColors.text.primary,
+  },
   footerLink: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontFamily: interFamilyForWeight(700),
     color: staticColors.text.primary,
     textDecorationLine: 'underline',
   },
