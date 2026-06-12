@@ -40,7 +40,7 @@ export const colors = {
 
   // Background & Surface — neumorphic depth comes from the contrast between these
   background: {
-    light: '#EEF1F5',       // Soft blue-gray app background
+    light: '#FCFDFF',       // Bright white app background (matches Figma; shadows separate the cards)
     dark: '#1A1A1A',
   },
 
@@ -113,13 +113,15 @@ export const shadows = {
       },
     },
 
-    // Medium shadows (moderate depth) - Most common
+    // Medium shadows (moderate depth) - Most common.
+    // Used by NeuCard/NeuButton defaults. Straight-down soft float to match the
+    // app-wide design system (replaces the old diagonal neumorphic offset).
     md: {
       light: {
         shadowColor: '#5B7FA8',
-        shadowOffset: { width: 4, height: 6 },
-        shadowOpacity: 0.22,
-        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.16,
+        shadowRadius: 13,
         elevation: 5,
       },
       dark: {

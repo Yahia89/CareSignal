@@ -14,9 +14,9 @@
 // ── Color ───────────────────────────────────────────────────────────────
 export const figmaColor = {
   // Page + surfaces
-  pageBg: '#EAEFF5',     // Slightly cooler pearly bluish-gray
+  pageBg: '#FCFDFF',     // Bright white page bg (matches Figma; shadows separate the cards)
   headerBg: '#FFFFFF',
-  cardBg: '#F2F5FA',     // Card bg with the same cool tint
+  cardBg: '#FFFFFF',     // White cards so they stay above the near-white page
   surface: '#FFFFFF',
   border: '#D7DEE6',
 

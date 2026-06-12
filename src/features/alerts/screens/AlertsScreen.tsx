@@ -142,7 +142,18 @@ export const AlertsScreen = () => {
     return (
       <Screen style={{ backgroundColor: colors.background }}>
         <View style={styles.upgradeWrap}>
-          <NeuCard style={{ padding: spacing[24], alignItems: 'flex-start' }}>
+          <NeuCard
+            style={{
+              padding: spacing[24],
+              alignItems: 'flex-start',
+              // Tier A — straight-down soft float, consistent with the app.
+              shadowColor: '#3A5575',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.17,
+              shadowRadius: 16,
+              elevation: 6,
+            }}
+          >
             <Text variant="title">Alert history</Text>
             <Spacer y="sm" />
             <Text variant="caption" color={colors.text.secondary}>

@@ -17,7 +17,6 @@ import {
   useColors,
   spacing,
   borderRadius,
-  getShadowStyle,
   colors as staticColors,
 } from '../../../shared/design';
 import { interFamilyForWeight } from '../../../shared/design/tokens/utils';
@@ -213,7 +212,12 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 58,
     borderRadius: borderRadius.full,
-    ...getShadowStyle('lg'),
+    // Tier C — primary-CTA soft float (straight-down), matching the design system.
+    shadowColor: '#5B7FA8',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
   },
 
   forgotRow: {

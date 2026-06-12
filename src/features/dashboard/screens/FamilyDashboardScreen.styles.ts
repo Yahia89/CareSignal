@@ -74,30 +74,35 @@ export const familyDashboardStyles = StyleSheet.create({
   },
 
   // ── Status row ────────────────────────────────────────────────────────────
+  // Name + status pill sit together (pill right after the name), not pushed to
+  // opposite edges — matches the design. The name shrinks if it's very long.
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
   statusName: {
     fontFamily: interFamilyForWeight(700),
     fontSize: figmaFont.h1,
+    lineHeight: figmaFont.h1,
     color: figmaColor.titleNavy,
-    flex: 1,
-    paddingRight: spacing[12],
+    flexShrink: 1,
+    marginRight: spacing[12],
   },
+  // Compact badge that hugs its label (design: ~45px for "OK"), not a fixed
+  // wide pill. 14px bold white text, vertically centered with the name.
   statusPill: {
-    paddingHorizontal: spacing[20],
+    paddingHorizontal: spacing[16],
     paddingVertical: spacing[8],
-    borderRadius: 20,
-    minWidth: 84,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   statusPillText: {
     fontFamily: interFamilyForWeight(700),
-    fontSize: figmaFont.bodyXl,
+    fontSize: figmaFont.bodyLg,
+    lineHeight: figmaFont.bodyLg,
     color: figmaColor.surface,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
 
   // ── Stat grid ─────────────────────────────────────────────────────────────
@@ -105,10 +110,13 @@ export const familyDashboardStyles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: figmaColor.surface,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
     borderRadius: figmaRadius.card,
     padding: 14,
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
   statEyebrow: {
     fontFamily: interFamilyForWeight(400),
@@ -132,13 +140,16 @@ export const familyDashboardStyles = StyleSheet.create({
   collapsibleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: figmaColor.cardBg,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
+    backgroundColor: figmaColor.surface,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: spacing[16],
     gap: spacing[8],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
   collapsibleBtnOpen: {
     borderBottomLeftRadius: 0,
@@ -151,14 +162,16 @@ export const familyDashboardStyles = StyleSheet.create({
     color: figmaColor.titleNavy,
   },
   collapsibleBody: {
-    backgroundColor: figmaColor.cardBg,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
-    borderTopWidth: 0,
+    backgroundColor: figmaColor.surface,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     paddingHorizontal: spacing[16],
     paddingVertical: spacing[12],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
 
   // ── Responsive Rating rows ─────────────────────────────────────────────────
@@ -191,77 +204,71 @@ export const familyDashboardStyles = StyleSheet.create({
   },
 
   // ── Vitals Snapshot ───────────────────────────────────────────────────────
+  // Outer light card containing the reading row + Delete/Save pill buttons.
   vitalCard: {
     backgroundColor: figmaColor.surface,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
-    borderRadius: figmaRadius.card,
-    overflow: 'hidden',
+    borderRadius: figmaRadius.cardLg,
+    padding: spacing[16],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
   vitalCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[16],
-    paddingVertical: spacing[16],
-  },
-  vitalIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: figmaColor.pageBg,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   vitalCardLabel: {
     fontFamily: interFamilyForWeight(700),
-    fontSize: figmaFont.bodyLg,
+    fontSize: figmaFont.h3,
     color: figmaColor.titleNavy,
     marginBottom: 2,
   },
   vitalCardValue: {
     fontFamily: interFamilyForWeight(400),
-    fontSize: figmaFont.body,
+    fontSize: figmaFont.bodyLg,
     color: figmaColor.bodyDark,
   },
-  // Image thumbnail on right (blood pressure cuff)
+  // Image thumbnail on right (senior's uploaded reading photo)
   vitalCardThumb: {
-    width: 72,
-    height: 56,
-    borderRadius: 8,
+    width: 84,
+    height: 60,
+    borderRadius: 10,
     backgroundColor: '#E3EDF3',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginLeft: spacing[12],
     overflow: 'hidden',
   },
-  vitalCardThumbInner: {
+  vitalCardThumbImg: {
+    width: '100%',
+    height: '100%',
+  },
+  vitalCardThumbPlaceholder: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Divider between info and Delete/Save row
-  vitalDivider: {
-    height: 1,
-    backgroundColor: figmaColor.border,
-  },
-  // Delete / Save action row
+  // Delete / Save — two separate rounded pill buttons with a gap
   vitalActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing[12],
+    marginTop: spacing[16],
   },
   vitalActionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing[12],
     gap: spacing[8],
-  },
-  vitalActionSep: {
-    width: 1,
-    height: 28,
-    backgroundColor: figmaColor.border,
+    backgroundColor: figmaColor.surface,
+    borderRadius: figmaRadius.pill,
+    paddingVertical: spacing[12],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   vitalActionText: {
     fontFamily: interFamilyForWeight(500),
@@ -271,10 +278,13 @@ export const familyDashboardStyles = StyleSheet.create({
   // Empty state
   vitalsEmptyCard: {
     backgroundColor: figmaColor.surface,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
     borderRadius: figmaRadius.card,
     padding: spacing[16],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
   vitalsEmptyText: {
     fontFamily: interFamilyForWeight(400),

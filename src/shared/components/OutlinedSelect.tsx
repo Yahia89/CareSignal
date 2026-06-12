@@ -7,10 +7,12 @@ import {
   Pressable,
   FlatList,
   ViewStyle,
+  TextStyle,
   StyleProp,
 } from 'react-native';
 import { ChevronDown, Check } from 'lucide-react-native';
 import { colors } from '../design';
+import { GlossBackground } from './GlossBackground';
 import { outlinedSelectStyles as styles } from './OutlinedSelect.styles';
 
 /**
@@ -39,6 +41,16 @@ export interface OutlinedSelectProps {
   containerStyle?: StyleProp<ViewStyle>;
   /** Style for the pill itself (border / radius / fill overrides). */
   fieldStyle?: StyleProp<ViewStyle>;
+  /** When true, renders a glossy "liquid glass" gradient behind the field. */
+  glossy?: boolean;
+  /** Corner radius for the glossy gradient — match the field's borderRadius. */
+  glossRadius?: number;
+  /** Override the selected-value text style (size / weight / color). */
+  valueStyle?: StyleProp<TextStyle>;
+  /** Override the dropdown chevron color. */
+  chevronColor?: string;
+  /** Override the dropdown chevron size. */
+  chevronSize?: number;
 }
 
 export const OutlinedSelect = ({
@@ -51,6 +63,11 @@ export const OutlinedSelect = ({
   style,
   containerStyle,
   fieldStyle,
+  glossy,
+  glossRadius = 999,
+  valueStyle,
+  chevronColor,
+  chevronSize,
 }: OutlinedSelectProps) => {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
@@ -67,14 +84,15 @@ export const OutlinedSelect = ({
           fieldStyle,
         ]}
       >
+        {glossy ? <GlossBackground id="voiceSelectGloss" radius={glossRadius} /> : null}
         <Text
-          style={selected ? styles.value : styles.placeholder}
+          style={[selected ? styles.value : styles.placeholder, valueStyle]}
           numberOfLines={1}
           ellipsizeMode="tail"
         >
           {selected ? selected.label : placeholder}
         </Text>
-        <ChevronDown size={20} color={colors.text.secondary} />
+        <ChevronDown size={chevronSize ?? 20} color={chevronColor ?? colors.text.secondary} />
       </TouchableOpacity>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}

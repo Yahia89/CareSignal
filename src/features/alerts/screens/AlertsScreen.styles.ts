@@ -13,6 +13,13 @@ export const alertsStyles = StyleSheet.create({
     padding: spacing[16],
     borderLeftWidth: 4,
     borderRadius: borderRadius.lg,
+    // Tier A — override NeuCard's diagonal md shadow with the straight-down
+    // soft float used across the rest of the app.
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
   rowIconWrap: {
     width: 32,

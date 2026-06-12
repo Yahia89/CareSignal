@@ -7,6 +7,7 @@ import {
   Pressable,
   Text as RNText,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { AxiosError } from 'axios';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +21,7 @@ import {
   Info,
   Trash2,
   Save,
+  Image as ImageIcon,
 } from 'lucide-react-native';
 import { Screen, SkeletonBlock, SkeletonGroup } from '../../../shared/components';
 import { familyDashboardStyles as styles } from './FamilyDashboardScreen.styles';
@@ -90,37 +92,40 @@ const VitalCard = ({ vital }: { vital: Vital }) => {
   const isBP = vital.vital_type === 'blood_pressure';
   const Icon = isBP ? Activity : Droplets;
 
+  // The senior may attach a photo (e.g. a screenshot of their monitor). The
+  // API doesn't expose an image URL yet, so we show a styled thumbnail
+  // placeholder; swap `imageUri` in once the backend returns one.
+  const imageUri = (vital as Vital & { image_url?: string }).image_url;
+
   return (
     <View style={styles.vitalCard}>
       {/* ── Info row: icon + label/value + image thumbnail ── */}
       <View style={styles.vitalCardRow}>
-        <View style={styles.vitalIconWrap}>
-          <Icon size={20} color={figmaColor.titleNavy} strokeWidth={2} />
-        </View>
+        <Icon size={26} color={figmaColor.titleNavy} strokeWidth={2} />
         <View style={{ flex: 1, marginLeft: spacing[12] }}>
           <RNText style={styles.vitalCardLabel}>{vitalDisplayLabel(vital.vital_type)}</RNText>
           <RNText style={styles.vitalCardValue}>{vital.value}/{vital.unit}</RNText>
         </View>
-        {/* Image thumbnail — blood pressure cuff visual */}
-        <View style={styles.vitalCardThumb}>
-          <View style={styles.vitalCardThumbInner}>
-            <Icon size={26} color={figmaColor.titleNavy} strokeWidth={1.5} />
-          </View>
-        </View>
+        {/* Image thumbnail — the senior's uploaded reading photo (tappable to view) */}
+        <TouchableOpacity style={styles.vitalCardThumb} activeOpacity={0.8}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.vitalCardThumbImg} resizeMode="cover" />
+          ) : (
+            <View style={styles.vitalCardThumbPlaceholder}>
+              <ImageIcon size={20} color={figmaColor.textMuted} strokeWidth={1.8} />
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
-      {/* ── Divider ── */}
-      <View style={styles.vitalDivider} />
-
-      {/* ── Delete / Save button row ── */}
+      {/* ── Delete / Save: two separate rounded pill buttons ── */}
       <View style={styles.vitalActions}>
         <TouchableOpacity style={styles.vitalActionBtn} activeOpacity={0.7}>
-          <Trash2 size={17} color={figmaColor.titleNavy} strokeWidth={2} />
+          <Trash2 size={18} color={figmaColor.titleNavy} strokeWidth={2} />
           <RNText style={styles.vitalActionText}>Delete</RNText>
         </TouchableOpacity>
-        <View style={styles.vitalActionSep} />
         <TouchableOpacity style={styles.vitalActionBtn} activeOpacity={0.7}>
-          <Save size={17} color={figmaColor.titleNavy} strokeWidth={2} />
+          <Save size={18} color={figmaColor.titleNavy} strokeWidth={2} />
           <RNText style={styles.vitalActionText}>Save</RNText>
         </TouchableOpacity>
       </View>

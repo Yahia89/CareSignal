@@ -67,9 +67,14 @@ export const settingsScreenStyles = StyleSheet.create({
 
   // Cards
   card: {
-    backgroundColor: figmaColor.cardBg,
+    backgroundColor: figmaColor.surface,
     borderRadius: figmaRadius.cardLg,
     padding: spacing[20],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
   cardEyebrow: {
     fontFamily: interFamilyForWeight(400),
@@ -123,17 +128,20 @@ export const settingsScreenStyles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
 
-  // Checkbox row (outlined button look)
+  // Checkbox row (soft raised card)
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: figmaColor.surface,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
     borderRadius: 12,
     paddingHorizontal: spacing[16],
     paddingVertical: 14,
     marginBottom: spacing[12],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   checkboxLabel: {
     flex: 1,
@@ -142,9 +150,9 @@ export const settingsScreenStyles = StyleSheet.create({
     color: figmaColor.titleNavy,
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 6,
     borderWidth: 2,
     borderColor: figmaColor.titleNavy,
     alignItems: 'center',
@@ -160,13 +168,16 @@ export const settingsScreenStyles = StyleSheet.create({
   aboutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: figmaColor.cardBg,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
+    backgroundColor: figmaColor.surface,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: spacing[16],
     gap: spacing[8],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
   aboutBtnOpen: {
     borderBottomLeftRadius: 0,
@@ -179,13 +190,15 @@ export const settingsScreenStyles = StyleSheet.create({
     color: figmaColor.titleNavy,
   },
   aboutBody: {
-    backgroundColor: figmaColor.cardBg,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
-    borderTopWidth: 0,
+    backgroundColor: figmaColor.surface,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     padding: spacing[16],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
 
   // Current Alert Routing summary
@@ -195,10 +208,15 @@ export const settingsScreenStyles = StyleSheet.create({
     color: figmaColor.bodyDark,
   },
   routingCard: {
-    backgroundColor: figmaColor.cardBg,
+    backgroundColor: figmaColor.surface,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: spacing[16],
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.17,
+    shadowRadius: 16,
+    elevation: 6,
   },
   routingEyebrow: {
     fontFamily: interFamilyForWeight(400),
@@ -218,11 +236,14 @@ export const settingsScreenStyles = StyleSheet.create({
   // Action links
   linkBtn: {
     backgroundColor: figmaColor.surface,
-    borderWidth: 1,
-    borderColor: figmaColor.border,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   linkBtnText: {
     fontFamily: interFamilyForWeight(600),

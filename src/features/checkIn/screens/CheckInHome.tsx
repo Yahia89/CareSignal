@@ -11,13 +11,14 @@ import {
   Animated,
   Easing,
 } from 'react-native';
+import { GlossBackground } from '../../../shared/components';
 import { checkInHomeStyles as styles } from './CheckInHome.styles';
 import {
   Volume2,
-  Smile,
+  Laugh as Smile,
   AlertTriangle,
-  BellRing,
-  ScanLine,
+  BellPlus as BellRing,
+  Camera,
   Save,
   Settings as SettingsIcon,
   Home as HomeIcon,
@@ -484,35 +485,79 @@ export const CheckInHome = () => {
               <RNText style={styles.greetingSub}>
                 {checkedIn ? 'Status :' : 'How are you doing today?'}
               </RNText>
-              <Spacer y="md" />
-              <RNText style={styles.voiceReady}>Voice assistant ready</RNText>
-              <Spacer y="sm" />
-              <View style={styles.voicePillRow}>
-                <TouchableOpacity
-                  style={styles.voicePill}
-                  onPress={() => {
-                    const next = !voiceOn;
-                    setVoiceOn(next);
-                    if (next) speak('Voice assistance enabled', { force: true });
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Volume2 size={18} color={NAVY} strokeWidth={2.2} />
-                  <RNText style={styles.voicePillText}>
-                    {voiceOn ? 'Voice ON' : 'Voice OFF'}
-                  </RNText>
-                </TouchableOpacity>
-                <View style={styles.voiceDropdownWrap}>
-                  <OutlinedSelect
-                    options={VOICE_TYPE_OPTIONS}
-                    value={voiceType}
-                    onValueChange={(v) => {
-                      setVoiceType(v);
-                      speak('Testing the selected voice', { force: true });
-                    }}
-                  />
-                </View>
-              </View>
+              {checkedIn && !successStatus ? (
+                /* State 3: collapsed status pill lives INSIDE the greeting card
+                   (design OK_Reading) — voice controls are hidden once checked in.
+                   Hidden during the State-2 success overlay to avoid a duplicate. */
+                <>
+                  <Spacer y="sm" />
+                  <View
+                    style={[
+                      styles.collapsedStatus,
+                      { backgroundColor: STATUS_THEME[checkedInStatus ?? 'ok'].bg },
+                    ]}
+                  >
+                    <View style={styles.statusIconWrap}>
+                      {checkedInStatus === 'ok' ? (
+                        <Smile size={28} color={STATUS_THEME.ok.fg} strokeWidth={2.2} />
+                      ) : checkedInStatus === 'needs_help' ? (
+                        <AlertTriangle size={28} color={STATUS_THEME.needs_help.fg} strokeWidth={2.2} />
+                      ) : (
+                        <BellRing size={28} color={STATUS_THEME.urgent.fg} strokeWidth={2.2} />
+                      )}
+                    </View>
+                    <View style={styles.statusTextCol}>
+                      <RNText
+                        style={[styles.statusTitle, { color: STATUS_THEME[checkedInStatus ?? 'ok'].fg }]}
+                      >
+                        {statusLabel}
+                      </RNText>
+                    </View>
+                  </View>
+                </>
+              ) : !checkedIn ? (
+                <>
+                  <Spacer y="md" />
+                  <RNText style={styles.voiceReady}>Voice assistant ready</RNText>
+                  <Spacer y="sm" />
+                  <View style={styles.voicePillRow}>
+                    <View style={styles.voiceCol}>
+                      <TouchableOpacity
+                        style={styles.voicePill}
+                        onPress={() => {
+                          const next = !voiceOn;
+                          setVoiceOn(next);
+                          if (next) speak('Voice assistance enabled', { force: true });
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <GlossBackground id="voiceOnGloss" radius={18} />
+                        <Volume2 size={18} color={NAVY} strokeWidth={2.2} />
+                        <RNText style={styles.voicePillText}>
+                          {voiceOn ? 'Voice ON' : 'Voice OFF'}
+                        </RNText>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.voiceDropdownWrap}>
+                      <OutlinedSelect
+                        options={VOICE_TYPE_OPTIONS}
+                        value={voiceType}
+                        onValueChange={(v) => {
+                          setVoiceType(v);
+                          speak('Testing the selected voice', { force: true });
+                        }}
+                        fieldStyle={styles.voiceSelectField}
+                        style={styles.voiceSelectOuter}
+                        glossy
+                        glossRadius={18}
+                        valueStyle={styles.voicePillText}
+                        chevronColor={NAVY}
+                        chevronSize={18}
+                      />
+                    </View>
+                  </View>
+                </>
+              ) : null}
             </NeuCard>
 
             <Spacer y="lg" />
@@ -534,36 +579,9 @@ export const CheckInHome = () => {
                 }}
               />
             ) : checkedIn ? (
-              /* ── State 3: collapsed pill ──────────────────────────────── */
-              <Animated.View style={{ opacity: transition }}>
-                <View
-                  style={[
-                    styles.collapsedStatus,
-                    { backgroundColor: STATUS_THEME[checkedInStatus ?? 'ok'].bg },
-                  ]}
-                >
-                  <View style={styles.statusIconWrap}>
-                    {checkedInStatus === 'ok' ? (
-                      <Smile size={28} color={STATUS_THEME.ok.fg} strokeWidth={2.2} />
-                    ) : checkedInStatus === 'needs_help' ? (
-                      <AlertTriangle size={28} color={STATUS_THEME.needs_help.fg} strokeWidth={2.2} />
-                    ) : (
-                      <BellRing size={28} color={STATUS_THEME.urgent.fg} strokeWidth={2.2} />
-                    )}
-                  </View>
-                  <View style={styles.statusTextCol}>
-                    <RNText
-                      style={[styles.statusTitle, { color: STATUS_THEME[checkedInStatus ?? 'ok'].fg }]}
-                    >
-                      {statusLabel}
-                    </RNText>
-                  </View>
-                </View>
-                <Spacer y="xs" />
-                <RNText style={styles.checkedInHint}>
-                  You've checked in today. Come back tomorrow.
-                </RNText>
-              </Animated.View>
+              /* State 3: the collapsed status pill now lives inside the greeting
+                 card above; nothing extra here — vital capture follows below. */
+              null
             ) : (
               /* ── State 1: three action buttons ────────────────────────── */
               <View>
@@ -630,7 +648,9 @@ export const CheckInHome = () => {
             {/* ───────────── Vital capture (shown after check-in) ───────── */}
             {checkedIn && !successStatus ? (
               <Animated.View style={{ opacity: transition }}>
-                <Spacer y="xl" />
+                <Spacer y="lg" />
+                {/* Design wraps the whole vital-capture section in a soft card. */}
+                <NeuCard style={styles.vitalCaptureCard}>
                 <RNText style={styles.vitalEyebrow}>Optional Vital Capture</RNText>
                 <Spacer y="xs" />
                 <RNText style={styles.vitalTitle}>
@@ -680,7 +700,7 @@ export const CheckInHome = () => {
                   <View style={{ width: spacing[12] }} />
                   <NeuButton
                     title="Scan"
-                    icon={ScanLine}
+                    icon={Camera}
                     size="md"
                     disabled={savingVital}
                     onPress={() => speak('Opening camera to scan reading')}
@@ -710,6 +730,7 @@ export const CheckInHome = () => {
                     </RNText>
                   </>
                 ) : null}
+                </NeuCard>
               </Animated.View>
             ) : null}
 

@@ -60,6 +60,17 @@ export const checkInHomeStyles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 6,
   },
+  // ─── Vital capture card (matches greeting card's soft surface) ─────────
+  vitalCaptureCard: {
+    padding: spacing[20],
+    borderRadius: borderRadius.xl,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#5B7FA8',
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    elevation: 6,
+  },
   eyebrow: {
     fontSize: 14,
     fontFamily: interFamilyForWeight(400),
@@ -92,39 +103,85 @@ export const checkInHomeStyles = StyleSheet.create({
     gap: spacing[8],
   },
   voicePill: {
+    // Stretches to fill its flex column (voiceCol); content centered.
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing[6],
-    backgroundColor: '#F4F7FB',
-    paddingVertical: spacing[8],
+    backgroundColor: '#FBFDFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
+    paddingVertical: 10,
     paddingHorizontal: spacing[16],
-    borderRadius: borderRadius.full,
+    // Rounded-rectangle with a little more curve on the ends (matches Figma).
+    borderRadius: 18,
+    borderCurve: 'continuous',
     shadowColor: '#5B7FA8',
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    elevation: 5,
   },
   voicePillText: {
     fontSize: 14,
     fontFamily: interFamilyForWeight(600),
     color: NAVY,
   },
+  // Two equal flex columns so Voice ON and Warm Voice are exactly the same width.
+  // minWidth:0 lets each column shrink to its true half (defeats flex min-content).
+  voiceCol: {
+    flex: 1,
+    minWidth: 0,
+  },
   voiceDropdownWrap: {
     flex: 1,
-    minWidth: 140,
+    minWidth: 0,
+  },
+  // Soft-pill override for the voice OutlinedSelect so it matches the "Voice ON"
+  // pill (design shows a matched pair, not an outlined box).
+  // Strip the OutlinedSelect's default marginBottom and force it to fill its
+  // column so the Warm Voice pill is exactly the Voice ON width.
+  voiceSelectOuter: { marginBottom: 0, width: '100%' },
+  voiceSelectField: {
+    // Match the Voice ON pill exactly (its base OutlinedSelect wrap forces
+    // minHeight 48 — override to the Voice ON height).
+    minHeight: 40,
+    backgroundColor: '#FBFDFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
+    // Rounded-rectangle with a little more curve on the ends (matches Figma).
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    paddingVertical: 10,
+    paddingHorizontal: spacing[16],
+    shadowColor: '#5B7FA8',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    elevation: 5,
   },
 
   // ─── Rich status action cards ────────────────────────────────────────
+  // Soft raised (neumorphic) shadow so the pills float above the page,
+  // matching the design.
   statusCard: {
     width: '100%',
     minHeight: 76,
-    borderRadius: borderRadius.full,
+    // Rounded-rectangle (not a full capsule) with iOS continuous corners to
+    // match the Figma daily-check pills.
+    borderRadius: borderRadius['3xl'],
+    borderCurve: 'continuous',
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing[16],
     paddingHorizontal: spacing[20],
     gap: spacing[16],
+    // Soft neumorphic lift — clearly visible (matches the design's float).
+    shadowColor: '#3A5575',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 8,
   },
   statusIconWrap: {
     width: 36,
@@ -184,10 +241,10 @@ export const checkInHomeStyles = StyleSheet.create({
     minHeight: 52,
     borderRadius: borderRadius.full,
     shadowColor: '#5B7FA8',
-    shadowOffset: { width: 2, height: 3 },
-    shadowOpacity: 0.14,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 5,
   },
   bottomBtnText: {
     fontSize: 15,

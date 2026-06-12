@@ -1,15 +1,14 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { extractApiError } from '../../../shared/utils';
 import { View, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Pressable, Text as RNText } from 'react-native';
 import { AxiosError } from 'axios';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Check, Sun, Moon, Info, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ArrowLeft, Check, Info, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { Screen } from '../../../shared/components';
 import { settingsScreenStyles as styles } from "./SettingsScreen.styles";
-import { spacing, borderRadius, figmaColor, figmaFont, figmaRadius, ThemeContext } from '../../../shared/design';
+import { spacing, borderRadius, figmaColor, figmaFont, figmaRadius } from '../../../shared/design';
 import { LogoCard } from '../../../shared/components';
 import { interFamilyForWeight } from '../../../shared/design/tokens/utils';
-import { useAuth } from '../../../shared/contexts/AuthContext';
 import { alertSettingsService } from '../../../services/alertSettings.service';
 import type { AlertSettings } from '../../../types';
 import { DEFAULT_ALERT_SETTINGS } from '../../../types';
@@ -54,10 +53,6 @@ const CheckboxRow = ({
 
 export const SettingsScreen = () => {
   const navigation = useNavigation<any>();
-  const { dispatch, logout } = useAuth();
-  // Optional — if the ThemeProvider isn't mounted in a given environment,
-  // we just hide the toggle row gracefully.
-  const themeCtx = useContext(ThemeContext);
 
   const [aboutOpen, setAboutOpen] = useState(false);
   const [settings, setSettings] = useState<AlertSettings | null>(null);
@@ -145,11 +140,6 @@ export const SettingsScreen = () => {
     !!settings &&
     !!lastConfirmed.current &&
     JSON.stringify(settings) !== JSON.stringify(lastConfirmed.current);
-
-  const handleLogout = async () => {
-    await logout();
-    dispatch({ type: 'LOGOUT' });
-  };
 
   return (
     <Screen style={{ backgroundColor: figmaColor.pageBg, padding: 0 }}>
@@ -282,7 +272,6 @@ export const SettingsScreen = () => {
               <CheckboxRow label="Email Alert" value={settings.urgent_help_email} disabled={saving} onChange={handleToggle('urgent_help_email')} />
               <CheckboxRow label="Text Alert" value={settings.urgent_help_text} disabled={saving} onChange={handleToggle('urgent_help_text')} />
               <CheckboxRow label="Phone Call Alert" value={settings.urgent_help_phone} disabled={saving} onChange={handleToggle('urgent_help_phone')} />
-              <CheckboxRow label="Auto-call Senior" value={settings.urgent_auto_call_senior} disabled={saving} onChange={handleToggle('urgent_auto_call_senior')} />
             </View>
 
             {saving ? (
@@ -300,36 +289,9 @@ export const SettingsScreen = () => {
             ) : lastConfirmed.current ? (
               <RNText style={[styles.smallMuted, { marginTop: spacing[12] }]}>All changes saved.</RNText>
             ) : null}
-
-            <View style={{ height: spacing[24] }} />
-
-            <TouchableOpacity onPress={() => navigation.navigate('Alerts')} style={styles.linkBtn}>
-              <RNText style={styles.linkBtnText}>View alert history</RNText>
-            </TouchableOpacity>
-
-            {themeCtx ? (
-              <>
-                <View style={{ height: spacing[12] }} />
-                <TouchableOpacity
-                  onPress={themeCtx.toggleTheme}
-                  style={[styles.linkBtn, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}
-                >
-                  {themeCtx.mode === 'dark' ? (
-                    <Sun size={18} color={figmaColor.titleNavy} strokeWidth={2.2} />
-                  ) : (
-                    <Moon size={18} color={figmaColor.titleNavy} strokeWidth={2.2} />
-                  )}
-                  <RNText style={[styles.linkBtnText, { marginLeft: 8 }]}>
-                    Switch to {themeCtx.mode === 'dark' ? 'Light' : 'Dark'} theme
-                  </RNText>
-                </TouchableOpacity>
-              </>
-            ) : null}
-
-            <View style={{ height: spacing[12] }} />
-            <TouchableOpacity onPress={handleLogout} style={styles.linkBtn}>
-              <RNText style={styles.linkBtnText}>Logout</RNText>
-            </TouchableOpacity>
+            {/* Design ends after the Urgent Help section — no "View alert
+                history", theme toggle, or "Logout" buttons. Logout remains
+                reachable from the Family Dashboard header. */}
           </>
         ) : null}
 
