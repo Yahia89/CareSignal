@@ -99,10 +99,6 @@ export const LoginScreen = () => {
             <Spacer y="lg" />
 
             <Text style={styles.title}>Login for Care Signal</Text>
-            <Spacer y="sm" />
-            <Text style={styles.subtitle}>
-              Family-Side access for alert controls and senior monitoring
-            </Text>
 
             <Spacer y="xl" />
 

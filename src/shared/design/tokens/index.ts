@@ -63,9 +63,10 @@ export const colors = {
     subtle: '#CBD5E1',      // Generic dividers
   },
 
-  // Input fill (light blue-tint, exact Figma)
+  // Input fill — white to match the bright page background (fields read via
+  // their border, not a tinted fill).
   inputFill: {
-    light: '#F1F5F9',
+    light: '#FCFDFF',
     dark: '#1E293B',
   },
 };

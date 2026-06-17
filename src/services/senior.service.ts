@@ -37,15 +37,18 @@ export const seniorService = {
   },
 
   /**
-   * GET /senior/vitals — family only.
-   * Returns the linked senior's recent vital readings so the family dashboard
-   * can display the Vitals Snapshot section.
-   * Returns [] on 403/404 (not linked, no vitals, or endpoint not supported).
+   * GET /vitals — vital history. NOTE: this endpoint is **Senior only** on the
+   * backend (a senior reading their OWN vitals). A family/caregiver token gets
+   * 403, so the Family Dashboard's Vitals Snapshot will be empty until the
+   * backend adds a family-accessible endpoint (there is currently none — the
+   * family-only `/senior/status` returns care status + today's check-in, not
+   * vitals). The old `/senior/vitals` path returned 404 (route does not exist).
+   * Returns [] on 401/403/404 so the dashboard degrades gracefully.
    */
   getVitals: async (limit = 5): Promise<Vital[]> => {
     try {
-      const response = await apiClient.get<PaginatedEnvelope<Vital>>('/senior/vitals', {
-        params: { limit },
+      const response = await apiClient.get<PaginatedEnvelope<Vital>>('/vitals', {
+        params: { page: 1, limit },
       });
       return response.data?.data ?? [];
     } catch {

@@ -233,7 +233,11 @@
       "Bash(sed -n '/voiceDropdownWrap: {/,/^  },/p' src/features/checkIn/screens/CheckInHome.styles.ts)",
       "Bash(sed -n '/outer: {/,/}/p' src/shared/components/OutlinedSelect.styles.ts)",
       "Bash(sips --cropOffset 800 50 -c 200 1080 /tmp/reload4.png --out /tmp/final.png)",
-      "Bash(sips -Z 1000 /tmp/final.png --out /tmp/final_big.png)"
+      "Bash(sips -Z 1000 /tmp/final.png --out /tmp/final_big.png)",
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" \"https://carsignal-api.vercel.app/api/vitals?page=1&limit=20\" -H \"accept: application/json\")",
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" \"https://carsignal-api.vercel.app/api/vitals?page=1&limit=20\" -H \"accept: application/json\" -H \"authorization: Bearer invalid.token.here\")",
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" \"https://carsignal-api.vercel.app/api/senior/vitals?page=1&limit=20\" -H \"accept: application/json\")",
+      "Bash(curl -s -o /dev/null -w \"status %{http_code}\\\\n\" http://127.0.0.1:8081/status)"
     ]
   }
 }
