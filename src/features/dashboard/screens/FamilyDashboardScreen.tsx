@@ -19,9 +19,6 @@ import {
   Activity,
   Droplets,
   Info,
-  Trash2,
-  Save,
-  Image as ImageIcon,
 } from 'lucide-react-native';
 import { Screen, SkeletonBlock, SkeletonGroup } from '../../../shared/components';
 import { familyDashboardStyles as styles } from './FamilyDashboardScreen.styles';
@@ -53,6 +50,16 @@ const careStatusPresentation = (
 const formatTime = (iso: string): string => {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+const formatDateTime = (iso: string): string => {
+  const d = new Date(iso);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const day = d.getDate();
+  const mon = months[d.getMonth()];
+  const hr = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${mon} ${day} · ${hr}:${min}`;
 };
 
 const vitalDisplayLabel = (type: string): string =>
@@ -97,6 +104,8 @@ const VitalCard = ({ vital }: { vital: Vital }) => {
   // placeholder; swap `imageUri` in once the backend returns one.
   const imageUri = (vital as Vital & { image_url?: string }).image_url;
 
+  const recordedAt = vital.recorded_at ? formatDateTime(vital.recorded_at) : '';
+
   return (
     <View style={styles.vitalCard}>
       {/* ── Info row: icon + label/value + image thumbnail ── */}
@@ -105,28 +114,21 @@ const VitalCard = ({ vital }: { vital: Vital }) => {
         <View style={{ flex: 1, marginLeft: spacing[12] }}>
           <RNText style={styles.vitalCardLabel}>{vitalDisplayLabel(vital.vital_type)}</RNText>
           <RNText style={styles.vitalCardValue}>{vital.value}/{vital.unit}</RNText>
+          {recordedAt ? (
+            <RNText style={styles.vitalCardTime}>{recordedAt}</RNText>
+          ) : null}
         </View>
-        {/* Image thumbnail — the senior's uploaded reading photo (tappable to view) */}
+        {/* Image thumbnail — static asset or senior's uploaded reading photo */}
         <TouchableOpacity style={styles.vitalCardThumb} activeOpacity={0.8}>
           {imageUri ? (
             <Image source={{ uri: imageUri }} style={styles.vitalCardThumbImg} resizeMode="cover" />
           ) : (
-            <View style={styles.vitalCardThumbPlaceholder}>
-              <ImageIcon size={20} color={figmaColor.textMuted} strokeWidth={1.8} />
-            </View>
+            <Image
+              source={require('../../../../assets/vital-thumbnail.png')}
+              style={styles.vitalCardThumbImg}
+              resizeMode="cover"
+            />
           )}
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Delete / Save: two separate rounded pill buttons ── */}
-      <View style={styles.vitalActions}>
-        <TouchableOpacity style={styles.vitalActionBtn} activeOpacity={0.7}>
-          <Trash2 size={18} color={figmaColor.titleNavy} strokeWidth={2} />
-          <RNText style={styles.vitalActionText}>Delete</RNText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.vitalActionBtn} activeOpacity={0.7}>
-          <Save size={18} color={figmaColor.titleNavy} strokeWidth={2} />
-          <RNText style={styles.vitalActionText}>Save</RNText>
         </TouchableOpacity>
       </View>
     </View>

@@ -3,15 +3,15 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Text as RNText,
   useWindowDimensions,
   Linking,
-  Alert,
+  Modal,
   ActivityIndicator,
   Animated,
   Easing,
 } from 'react-native';
-import { GlossBackground } from '../../../shared/components';
 import { checkInHomeStyles as styles } from './CheckInHome.styles';
 import {
   Volume2,
@@ -21,7 +21,9 @@ import {
   Camera,
   Save,
   Settings as SettingsIcon,
-  Home as HomeIcon,
+  Link2,
+  LogOut,
+  X,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Spacer } from '../../../shared/components';
@@ -156,7 +158,7 @@ export const CheckInHome = () => {
   const { state, dispatch } = useAuth();
   const { state: settingsState } = useSettings();
   const colors = useColors();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isTablet = width >= TABLET_BREAKPOINT;
   const user = state.user;
 
@@ -290,33 +292,23 @@ export const CheckInHome = () => {
     dispatch({ type: 'LOGOUT' });
   };
 
-  /**
-   * The design collapses the old "Pairing" + "Logout" header buttons into a
-   * single Settings gear. Tapping it opens a native action sheet so both
-   * actions stay reachable for the senior without cluttering the header.
-   */
+  const [settingsSheetOpen, setSettingsSheetOpen] = useState(false);
+  const sheetAnim = useRef(new Animated.Value(0)).current;
+
   const openSettings = () => {
-    Alert.alert('Settings', undefined, [
-      {
-        text: 'Family Linking',
-        // @ts-expect-error — Pairing exists on the Elder stack
-        onPress: () => navigation.navigate('Pairing'),
-      },
-      { text: 'Log Out', style: 'destructive', onPress: handleLogout },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setSettingsSheetOpen(true);
+    Animated.spring(sheetAnim, { toValue: 1, useNativeDriver: true, friction: 9, tension: 65 }).start();
+  };
+  const closeSettings = () => {
+    Animated.timing(sheetAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setSettingsSheetOpen(false);
+    });
   };
 
   /** Re-speak the greeting line (the "Replay Voice" bottom button). */
   const replayVoice = () => {
     const name = user?.name?.split(' ')[0] || 'Eleanor';
     speak(`Good morning, ${name}. How are you today?`, { force: true });
-  };
-
-  /** "Family View" — shows the senior who they're linked with (Pairing screen). */
-  const goToFamilyView = () => {
-    // @ts-expect-error — Pairing exists on the Elder stack
-    navigation.navigate('Pairing');
   };
 
   /**
@@ -429,6 +421,7 @@ export const CheckInHome = () => {
         : 'Urgent Help';
 
   return (
+    <>
     <Screen style={{ backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -519,7 +512,7 @@ export const CheckInHome = () => {
                 <>
                   <Spacer y="md" />
                   <RNText style={styles.voiceReady}>Voice assistant ready</RNText>
-                  <Spacer y="sm" />
+                  <View style={{ height: height * 0.025 }} />
                   <View style={styles.voicePillRow}>
                     <View style={styles.voiceCol}>
                       <TouchableOpacity
@@ -531,7 +524,6 @@ export const CheckInHome = () => {
                         }}
                         activeOpacity={0.8}
                       >
-                        <GlossBackground id="voiceOnGloss" radius={18} />
                         <Volume2 size={18} color={NAVY} strokeWidth={2.2} />
                         <RNText style={styles.voicePillText}>
                           {voiceOn ? 'Voice ON' : 'Voice OFF'}
@@ -548,8 +540,6 @@ export const CheckInHome = () => {
                         }}
                         fieldStyle={styles.voiceSelectField}
                         style={styles.voiceSelectOuter}
-                        glossy
-                        glossRadius={18}
                         valueStyle={styles.voicePillText}
                         chevronColor={NAVY}
                         chevronSize={18}
@@ -621,9 +611,9 @@ export const CheckInHome = () => {
                   </>
                 ) : null}
 
-                <Spacer y="md" />
+                <View style={{ height: height * 0.035 }} />
 
-                {/* Bottom row: Replay Voice + Family View */}
+                {/* Bottom row: Replay Voice */}
                 <View style={styles.bottomRow}>
                   <TouchableOpacity
                     style={styles.bottomBtn}
@@ -632,14 +622,6 @@ export const CheckInHome = () => {
                   >
                     <Volume2 size={20} color={NAVY} strokeWidth={2.2} />
                     <RNText style={styles.bottomBtnText}>Replay Voice</RNText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.bottomBtn}
-                    onPress={goToFamilyView}
-                    activeOpacity={0.8}
-                  >
-                    <HomeIcon size={20} color={NAVY} strokeWidth={2.2} />
-                    <RNText style={styles.bottomBtnText}>Family View</RNText>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -741,6 +723,174 @@ export const CheckInHome = () => {
         </View>
       </ScrollView>
     </Screen>
+
+    {/* ── Settings Bottom Sheet ──────────────────────────────────────── */}
+    <Modal
+      visible={settingsSheetOpen}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={closeSettings}
+    >
+      <Pressable
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.35)',
+          justifyContent: 'flex-end',
+        }}
+        onPress={closeSettings}
+      >
+        <Animated.View
+          style={{
+            backgroundColor: '#E8EFF6',
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingBottom: 40,
+            paddingTop: 12,
+            paddingHorizontal: 24,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -6 },
+            shadowOpacity: 0.15,
+            shadowRadius: 20,
+            elevation: 14,
+            transform: [{
+              translateY: sheetAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [300, 0],
+              }),
+            }],
+          }}
+        >
+          {/* Handle bar */}
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#D0D5DD' }} />
+          </View>
+
+          {/* Title row */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <RNText style={{ fontSize: 20, fontFamily: interFamilyForWeight(700), color: NAVY }}>
+              Settings
+            </RNText>
+            <TouchableOpacity onPress={closeSettings} hitSlop={12}>
+              <X size={22} color={NAVY} strokeWidth={2.2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Family Linking — neumorphic raised card */}
+          <View style={{
+            borderRadius: 16,
+            marginBottom: 14,
+            shadowColor: '#FFFFFF',
+            shadowOffset: { width: -4, height: -4 },
+            shadowOpacity: 0.9,
+            shadowRadius: 8,
+          }}>
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 14,
+                backgroundColor: '#F0F4F8',
+                paddingVertical: 18,
+                paddingHorizontal: 20,
+                borderRadius: 16,
+                shadowColor: '#B0C4D8',
+                shadowOffset: { width: 4, height: 4 },
+                shadowOpacity: 0.45,
+                shadowRadius: 8,
+                elevation: 5,
+              }}
+              activeOpacity={0.85}
+              onPress={() => {
+                closeSettings();
+                // @ts-expect-error — Pairing exists on the Elder stack
+                setTimeout(() => navigation.navigate('Pairing'), 250);
+              }}
+            >
+              <View style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                backgroundColor: '#E8EFF6',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#B0C4D8',
+                shadowOffset: { width: 2, height: 2 },
+                shadowOpacity: 0.35,
+                shadowRadius: 4,
+                elevation: 3,
+              }}>
+                <Link2 size={20} color={NAVY} strokeWidth={2.2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <RNText style={{ fontSize: 16, fontFamily: interFamilyForWeight(600), color: NAVY }}>
+                  Family Linking
+                </RNText>
+                <RNText style={{ fontSize: 13, fontFamily: interFamilyForWeight(400), color: '#6B7280', marginTop: 2 }}>
+                  Connect with your family member
+                </RNText>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Log Out — neumorphic raised card */}
+          <View style={{
+            borderRadius: 16,
+            shadowColor: '#FFFFFF',
+            shadowOffset: { width: -4, height: -4 },
+            shadowOpacity: 0.9,
+            shadowRadius: 8,
+          }}>
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 14,
+                backgroundColor: '#F0F4F8',
+                paddingVertical: 18,
+                paddingHorizontal: 20,
+                borderRadius: 16,
+                shadowColor: '#B0C4D8',
+                shadowOffset: { width: 4, height: 4 },
+                shadowOpacity: 0.45,
+                shadowRadius: 8,
+                elevation: 5,
+              }}
+              activeOpacity={0.85}
+              onPress={() => {
+                closeSettings();
+                setTimeout(handleLogout, 250);
+              }}
+            >
+              <View style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                backgroundColor: '#FDECEC',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#E8B4B4',
+                shadowOffset: { width: 2, height: 2 },
+                shadowOpacity: 0.4,
+                shadowRadius: 4,
+                elevation: 3,
+              }}>
+                <LogOut size={20} color="#DC2626" strokeWidth={2.2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <RNText style={{ fontSize: 16, fontFamily: interFamilyForWeight(600), color: '#DC2626' }}>
+                  Log Out
+                </RNText>
+                <RNText style={{ fontSize: 13, fontFamily: interFamilyForWeight(400), color: '#6B7280', marginTop: 2 }}>
+                  Sign out of your account
+                </RNText>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </Pressable>
+    </Modal>
+    </>
   );
 };
 

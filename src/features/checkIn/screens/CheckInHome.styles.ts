@@ -103,23 +103,18 @@ export const checkInHomeStyles = StyleSheet.create({
     gap: spacing[8],
   },
   voicePill: {
-    // Stretches to fill its flex column (voiceCol); content centered.
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[6],
-    backgroundColor: '#FBFDFF',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 10,
     paddingHorizontal: spacing[16],
-    // Rounded-rectangle with a little more curve on the ends (matches Figma).
-    borderRadius: 18,
-    borderCurve: 'continuous',
+    borderRadius: borderRadius.full,
     shadowColor: '#5B7FA8',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.14,
-    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
     elevation: 5,
   },
   voicePillText: {
@@ -143,21 +138,16 @@ export const checkInHomeStyles = StyleSheet.create({
   // column so the Warm Voice pill is exactly the Voice ON width.
   voiceSelectOuter: { marginBottom: 0, width: '100%' },
   voiceSelectField: {
-    // Match the Voice ON pill exactly (its base OutlinedSelect wrap forces
-    // minHeight 48 — override to the Voice ON height).
     minHeight: 40,
-    backgroundColor: '#FBFDFF',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-    // Rounded-rectangle with a little more curve on the ends (matches Figma).
-    borderRadius: 18,
-    borderCurve: 'continuous',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 0,
+    borderRadius: borderRadius.full,
     paddingVertical: 10,
     paddingHorizontal: spacing[16],
     shadowColor: '#5B7FA8',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.14,
-    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
     elevation: 5,
   },
 

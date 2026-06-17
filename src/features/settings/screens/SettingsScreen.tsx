@@ -289,9 +289,10 @@ export const SettingsScreen = () => {
             ) : lastConfirmed.current ? (
               <RNText style={[styles.smallMuted, { marginTop: spacing[12] }]}>All changes saved.</RNText>
             ) : null}
-            {/* Design ends after the Urgent Help section — no "View alert
-                history", theme toggle, or "Logout" buttons. Logout remains
-                reachable from the Family Dashboard header. */}
+            <View style={{ height: spacing[24] }} />
+            <TouchableOpacity onPress={() => navigation.navigate('Alerts')} style={styles.linkBtn}>
+              <RNText style={styles.linkBtnText}>View alert history</RNText>
+            </TouchableOpacity>
           </>
         ) : null}
 

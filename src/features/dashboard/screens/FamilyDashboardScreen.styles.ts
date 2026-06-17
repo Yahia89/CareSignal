@@ -230,6 +230,12 @@ export const familyDashboardStyles = StyleSheet.create({
     fontSize: figmaFont.bodyLg,
     color: figmaColor.bodyDark,
   },
+  vitalCardTime: {
+    fontFamily: interFamilyForWeight(400),
+    fontSize: 12,
+    color: figmaColor.textMuted,
+    marginTop: 3,
+  },
   // Image thumbnail on right (senior's uploaded reading photo)
   vitalCardThumb: {
     width: 84,

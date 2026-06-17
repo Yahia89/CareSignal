@@ -1,0 +1,8 @@
+.git
+node_modules/.cache
+*.tsbuildinfo
+.expo
+android/.gradle
+android/app/build
+ios/Pods
+ios/build
