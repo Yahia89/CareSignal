@@ -155,7 +155,7 @@ const StatusActionButton = ({
 
 export const CheckInHome = () => {
   const navigation = useNavigation();
-  const { state, dispatch } = useAuth();
+  const { state, dispatch, logout } = useAuth();
   const { state: settingsState } = useSettings();
   const colors = useColors();
   const { width, height } = useWindowDimensions();
@@ -287,9 +287,9 @@ export const CheckInHome = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todayCheckIn]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     speak('Logging out');
-    dispatch({ type: 'LOGOUT' });
+    await logout();
   };
 
   const [settingsSheetOpen, setSettingsSheetOpen] = useState(false);
@@ -828,6 +828,70 @@ export const CheckInHome = () => {
                 </RNText>
                 <RNText style={{ fontSize: 13, fontFamily: interFamilyForWeight(400), color: '#6B7280', marginTop: 2 }}>
                   Connect with your family member
+                </RNText>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Test Push — neumorphic raised card (debug helper) */}
+          <View style={{
+            borderRadius: 16,
+            marginBottom: 14,
+            shadowColor: '#FFFFFF',
+            shadowOffset: { width: -4, height: -4 },
+            shadowOpacity: 0.9,
+            shadowRadius: 8,
+          }}>
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 14,
+                backgroundColor: '#F0F4F8',
+                paddingVertical: 18,
+                paddingHorizontal: 20,
+                borderRadius: 16,
+                shadowColor: '#B0C4D8',
+                shadowOffset: { width: 4, height: 4 },
+                shadowOpacity: 0.45,
+                shadowRadius: 8,
+                elevation: 5,
+              }}
+              activeOpacity={0.85}
+              onPress={async () => {
+                const { devTestPush } = await import(
+                  '../../../shared/notifications/devTestPush'
+                );
+                await devTestPush.selfRemote({
+                  title: 'CareSignal Test',
+                  body: 'Push notification is working!',
+                  channel: 'help',
+                  data: { type: 'help' },
+                });
+                speak('Test push notification sent');
+              }}
+            >
+              <View style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                backgroundColor: '#E8EFF6',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#B0C4D8',
+                shadowOffset: { width: 2, height: 2 },
+                shadowOpacity: 0.35,
+                shadowRadius: 4,
+                elevation: 3,
+              }}>
+                <BellRing size={20} color={NAVY} strokeWidth={2.2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <RNText style={{ fontSize: 16, fontFamily: interFamilyForWeight(600), color: NAVY }}>
+                  Test Push
+                </RNText>
+                <RNText style={{ fontSize: 13, fontFamily: interFamilyForWeight(400), color: '#6B7280', marginTop: 2 }}>
+                  Send a test notification to this device
                 </RNText>
               </View>
             </TouchableOpacity>
