@@ -45,6 +45,7 @@ import { OutlinedSelect, OutlinedField } from '../../../shared/components';
 import { LogoCard } from '../../../shared/components';
 import { checkInsService } from '../../../services/checkins.service';
 import { vitalsService } from '../../../services/vitals.service';
+import { scanVitalFromCamera } from '../services/vitalScanService';
 import { CheckInSuccessOverlay } from './CheckInSuccessOverlay';
 import {
   CheckIn,
@@ -180,6 +181,7 @@ export const CheckInHome = () => {
   const transition = useRef(new Animated.Value(0)).current;
 
   const [savingVital, setSavingVital] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [vitalSavedAt, setVitalSavedAt] = useState<number | null>(null);
   // Remember which input method was used for the most recent save so the
   // success line can show it back to the user (proof that the selection
@@ -404,6 +406,30 @@ export const CheckInHome = () => {
       setVitalError(extractApiError(err, 'Failed to save reading. Please try again.'));
     } finally {
       setSavingVital(false);
+    }
+  };
+
+  const handleScan = async () => {
+    setVitalError(undefined);
+    setScanning(true);
+    speak('Opening the camera. Point it at your reading.');
+    try {
+      const result = await scanVitalFromCamera(vitalType);
+      if (result.ok) {
+        setVitalValue(result.value);
+        setInputMethod('camera');
+        speak(`Scanned ${result.value}. Please check it, then save.`);
+      } else if (result.reason === 'permission') {
+        setVitalError('Camera permission is needed. Allow it in Settings, or enter the reading manually.');
+      } else if (result.reason === 'no_reading') {
+        setVitalError("Couldn't read a number — try again with a clearer shot, or enter it manually.");
+      } else if (result.reason === 'error') {
+        setVitalError('Scan failed. Please enter the reading manually.');
+      }
+    } catch {
+      setVitalError('Scan failed. Please enter the reading manually.');
+    } finally {
+      setScanning(false);
     }
   };
 
@@ -684,8 +710,9 @@ export const CheckInHome = () => {
                     title="Scan"
                     icon={Camera}
                     size="md"
-                    disabled={savingVital}
-                    onPress={() => speak('Opening camera to scan reading')}
+                    loading={scanning}
+                    disabled={savingVital || scanning}
+                    onPress={handleScan}
                     style={styles.scanBtn}
                   />
                 </View>

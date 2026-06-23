@@ -63,9 +63,11 @@ export function useRegisterDevice() {
       }
 
       try {
+        // Don't send userId — the backend derives the user from the auth
+        // token, and its /devices/register schema is strict() so an extra
+        // field is rejected with 422 (silently skipping token registration).
         const res = await apiClient.post('/devices/register', {
           token,
-          userId,
           platform: Platform.OS, // 'ios' | 'android'
           appVersion: '1.0.0',
         });

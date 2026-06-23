@@ -18,7 +18,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.medtechcare.caresignal"
+      "bundleIdentifier": "com.medtechcare.caresignal.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -43,6 +46,21 @@
           "color": "#1E3A5F",
           "defaultChannel": "default",
           "sounds": []
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "CareSignal uses the camera to scan a blood sugar or blood pressure reading from your meter.",
+          "photosPermission": "CareSignal can read a blood sugar or blood pressure reading from a photo."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0"
+          }
         }
       ]
     ],
