@@ -434,6 +434,7 @@ export const CheckInHome = () => {
   };
 
   // Map today's check-in status to the corresponding label + icon below.
+  const isLoadingCheckIn = todayCheckIn === undefined;
   const checkedIn = todayCheckIn != null;
   const checkedInStatus = todayCheckIn?.status;
 
@@ -502,9 +503,9 @@ export const CheckInHome = () => {
               <RNText style={styles.eyebrow}>Daily Check-In</RNText>
               <RNText style={styles.greeting}>Good Morning, {greetingName}</RNText>
               <RNText style={styles.greetingSub}>
-                {checkedIn ? 'Status :' : 'How are you doing today?'}
+                {isLoadingCheckIn ? '' : checkedIn ? 'Status :' : 'How are you doing today?'}
               </RNText>
-              {checkedIn && !successStatus ? (
+              {checkedIn && !successStatus && !isLoadingCheckIn ? (
                 /* State 3: collapsed status pill lives INSIDE the greeting card
                    (design OK_Reading) — voice controls are hidden once checked in.
                    Hidden during the State-2 success overlay to avoid a duplicate. */
@@ -534,7 +535,7 @@ export const CheckInHome = () => {
                     </View>
                   </View>
                 </>
-              ) : !checkedIn ? (
+              ) : !checkedIn && !isLoadingCheckIn ? (
                 <>
                   <Spacer y="md" />
                   <RNText style={styles.voiceReady}>Voice assistant ready</RNText>
@@ -579,13 +580,18 @@ export const CheckInHome = () => {
             <Spacer y="lg" />
 
             {/* ── State 2: full-screen checkmark + confetti overlay ──────── */}
-            {successStatus ? (
+            {isLoadingCheckIn ? (
+              /* Loading: show a subtle spinner while we fetch today's check-in
+                 to avoid flashing the status buttons then immediately replacing them. */
+              <View style={{ alignItems: 'center', paddingVertical: spacing[32] }}>
+                <ActivityIndicator size="large" color={NAVY} />
+              </View>
+            ) : successStatus ? (
               <CheckInSuccessOverlay
                 status={successStatus}
                 name={greetingName}
                 onDone={() => {
                   setSuccessStatus(null);
-                  // State 2 → 3: fade the collapsed pill + vital section in.
                   Animated.timing(transition, {
                     toValue: 1,
                     duration: 500,
@@ -595,11 +601,8 @@ export const CheckInHome = () => {
                 }}
               />
             ) : checkedIn ? (
-              /* State 3: the collapsed status pill now lives inside the greeting
-                 card above; nothing extra here — vital capture follows below. */
               null
             ) : (
-              /* ── State 1: three action buttons ────────────────────────── */
               <View>
                 <StatusActionButton
                   icon={Smile}
@@ -855,70 +858,6 @@ export const CheckInHome = () => {
                 </RNText>
                 <RNText style={{ fontSize: 13, fontFamily: interFamilyForWeight(400), color: '#6B7280', marginTop: 2 }}>
                   Connect with your family member
-                </RNText>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Test Push — neumorphic raised card (debug helper) */}
-          <View style={{
-            borderRadius: 16,
-            marginBottom: 14,
-            shadowColor: '#FFFFFF',
-            shadowOffset: { width: -4, height: -4 },
-            shadowOpacity: 0.9,
-            shadowRadius: 8,
-          }}>
-            <TouchableOpacity
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 14,
-                backgroundColor: '#F0F4F8',
-                paddingVertical: 18,
-                paddingHorizontal: 20,
-                borderRadius: 16,
-                shadowColor: '#B0C4D8',
-                shadowOffset: { width: 4, height: 4 },
-                shadowOpacity: 0.45,
-                shadowRadius: 8,
-                elevation: 5,
-              }}
-              activeOpacity={0.85}
-              onPress={async () => {
-                const { devTestPush } = await import(
-                  '../../../shared/notifications/devTestPush'
-                );
-                await devTestPush.selfRemote({
-                  title: 'CareSignal Test',
-                  body: 'Push notification is working!',
-                  channel: 'help',
-                  data: { type: 'help' },
-                });
-                speak('Test push notification sent');
-              }}
-            >
-              <View style={{
-                width: 42,
-                height: 42,
-                borderRadius: 12,
-                backgroundColor: '#E8EFF6',
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#B0C4D8',
-                shadowOffset: { width: 2, height: 2 },
-                shadowOpacity: 0.35,
-                shadowRadius: 4,
-                elevation: 3,
-              }}>
-                <BellRing size={20} color={NAVY} strokeWidth={2.2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <RNText style={{ fontSize: 16, fontFamily: interFamilyForWeight(600), color: NAVY }}>
-                  Test Push
-                </RNText>
-                <RNText style={{ fontSize: 13, fontFamily: interFamilyForWeight(400), color: '#6B7280', marginTop: 2 }}>
-                  Send a test notification to this device
                 </RNText>
               </View>
             </TouchableOpacity>
