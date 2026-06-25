@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  ScrollView,
   TouchableOpacity,
   Pressable,
   Text as RNText,
@@ -12,6 +11,8 @@ import {
   Animated,
   Easing,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { checkInHomeStyles as styles } from './CheckInHome.styles';
 import {
   Volume2,
@@ -162,6 +163,17 @@ export const CheckInHome = () => {
   const { width, height } = useWindowDimensions();
   const isTablet = width >= TABLET_BREAKPOINT;
   const user = state.user;
+
+  const insets = useSafeAreaInsets();
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  const getBottomOffset = () => {
+    if (isInputFocused) {
+      // Dynamic offset: safe area bottom + space for the "Save Reading" button below the input field (56px minHeight + 8px marginTop + 24px extra padding)
+      return insets.bottom + 88;
+    }
+    return insets.bottom + 24; // Default offset
+  };
 
   const [voiceOn, setVoiceOn] = useState(true);
   const [voiceType, setVoiceType] = useState('warm');
@@ -450,9 +462,11 @@ export const CheckInHome = () => {
   return (
     <>
     <Screen style={{ backgroundColor: colors.background }}>
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={getBottomOffset()}
       >
         {/* ─────────────── Header: logo + Settings pill ──────────────── */}
         <View style={[styles.header, isTablet && styles.constrainTablet]}>
@@ -706,6 +720,8 @@ export const CheckInHome = () => {
                       keyboardType="numeric"
                       editable={!savingVital}
                       error={vitalError}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setIsInputFocused(false)}
                     />
                   </View>
                   <View style={{ width: spacing[12] }} />
@@ -751,7 +767,7 @@ export const CheckInHome = () => {
             <Spacer y="xxl" />
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
 
     {/* ── Settings Bottom Sheet ──────────────────────────────────────── */}

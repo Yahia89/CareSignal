@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
-  Platform,
-  KeyboardAvoidingView,
   TouchableOpacity,
   Text,
   useWindowDimensions,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Spacer } from '../../../shared/components';
 import { useAuth } from '../../../shared/contexts/AuthContext';
@@ -45,6 +44,17 @@ export const LoginScreen = () => {
   const { width } = useWindowDimensions();
   const isTablet = width >= TABLET_BREAKPOINT;
 
+  const insets = useSafeAreaInsets();
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
+
+  const getBottomOffset = () => {
+    if (focusedField === 'password') {
+      // Dynamic offset: safe area bottom + space for "Forgot password?" row + spacer + "Login" button + extra gap (120px)
+      return insets.bottom + 120;
+    }
+    return insets.bottom + 24; // Default offset
+  };
+
   const [form, setForm] = useState<LoginForm>(initialForm);
   const [errors, setErrors] = useState<FormErrors<LoginForm>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -78,102 +88,102 @@ export const LoginScreen = () => {
 
   return (
     <Screen style={{ backgroundColor: colors.background }}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={getBottomOffset()}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        <LogoCard />
+
+        <View
+          style={[
+            styles.formPad,
+            { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
+          ]}
         >
-          <LogoCard />
+        <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
+          <Spacer y="lg" />
 
-          <View
-            style={[
-              styles.formPad,
-              { paddingHorizontal: isTablet ? spacing[32] : spacing[24] },
-            ]}
+          <Text style={styles.title}>Login for Care Signal</Text>
+
+          <Spacer y="xl" />
+
+          <OutlinedField
+            placeholder="Email Address"
+            value={form.email}
+            onChangeText={(v) => setField('email', v)}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!loading}
+            error={errors.email}
+            textContentType="emailAddress"
+            autoComplete="email"
+            returnKeyType="next"
+            onFocus={() => setFocusedField('email')}
+            onBlur={() => setFocusedField(null)}
+          />
+
+          <OutlinedField
+            placeholder="Password"
+            value={form.password}
+            onChangeText={(v) => setField('password', v)}
+            secureTextEntry
+            editable={!loading}
+            error={errors.password}
+            textContentType="password"
+            autoComplete="password"
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
+            onFocus={() => setFocusedField('password')}
+            onBlur={() => setFocusedField(null)}
+          />
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword')}
+            activeOpacity={0.7}
+            style={styles.forgotRow}
+            disabled={loading}
+            hitSlop={8}
           >
-          <View style={[styles.constrain, isTablet && styles.constrainTablet]}>
-            <Spacer y="lg" />
+            <Text style={styles.forgotLink}>Forgot password?</Text>
+          </TouchableOpacity>
 
-            <Text style={styles.title}>Login for Care Signal</Text>
+          {submitError ? (
+            <>
+              <Spacer y="xs" />
+              <Text style={styles.submitError}>{submitError}</Text>
+            </>
+          ) : null}
 
-            <Spacer y="xl" />
+          <Spacer y="md" />
 
-            <OutlinedField
-              placeholder="Email Address"
-              value={form.email}
-              onChangeText={(v) => setField('email', v)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading}
-              error={errors.email}
-              textContentType="emailAddress"
-              autoComplete="email"
-              returnKeyType="next"
-            />
+          <NeuButton
+            title="Login"
+            onPress={handleLogin}
+            loading={loading}
+            disabled={loading}
+            size="lg"
+            style={styles.submitBtn}
+          />
 
-            <OutlinedField
-              placeholder="Password"
-              value={form.password}
-              onChangeText={(v) => setField('password', v)}
-              secureTextEntry
-              editable={!loading}
-              error={errors.password}
-              textContentType="password"
-              autoComplete="password"
-              returnKeyType="done"
-              onSubmitEditing={handleLogin}
-            />
+          <Spacer y="lg" />
 
-            <TouchableOpacity
-              onPress={() => navigation.navigate('ForgotPassword')}
-              activeOpacity={0.7}
-              style={styles.forgotRow}
-              disabled={loading}
-              hitSlop={8}
-            >
-              <Text style={styles.forgotLink}>Forgot password?</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('SignUp')}
+            activeOpacity={0.7}
+            style={styles.footerRow}
+            disabled={loading}
+          >
+            <Text style={styles.footerText}>Don't have an account? </Text>
+            <Text style={styles.footerLink}>Sign up</Text>
+          </TouchableOpacity>
+        </View>
+        </View>
 
-            {submitError ? (
-              <>
-                <Spacer y="xs" />
-                <Text style={styles.submitError}>{submitError}</Text>
-              </>
-            ) : null}
-
-            <Spacer y="md" />
-
-            <NeuButton
-              title="Login"
-              onPress={handleLogin}
-              loading={loading}
-              disabled={loading}
-              size="lg"
-              style={styles.submitBtn}
-            />
-
-            <Spacer y="lg" />
-
-            <TouchableOpacity
-              onPress={() => navigation.navigate('SignUp')}
-              activeOpacity={0.7}
-              style={styles.footerRow}
-              disabled={loading}
-            >
-              <Text style={styles.footerText}>Don't have an account? </Text>
-              <Text style={styles.footerLink}>Sign up</Text>
-            </TouchableOpacity>
-          </View>
-          </View>
-
-          <Spacer y="xxl" />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <Spacer y="xxl" />
+      </KeyboardAwareScrollView>
     </Screen>
   );
 };
