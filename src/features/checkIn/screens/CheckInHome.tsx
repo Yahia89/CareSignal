@@ -58,6 +58,7 @@ import {
 
 /** Best-effort error-message extraction for axios responses + Error throws. */
 import { extractApiError } from '../../../shared/utils';
+import { recordActivity } from '../../../services/lifecycle';
 
 const TABLET_BREAKPOINT = 768;
 const FORM_MAX_WIDTH = 480;
@@ -376,6 +377,10 @@ export const CheckInHome = () => {
     }
 
     if (successCheckIn) {
+      // A successful check-in is meaningful activity — restart the
+      // 24-hour inactivity timer.
+      recordActivity().catch(() => {});
+
       // Show State 2: checkmark + confetti overlay.
       // The overlay auto-dismisses after 3 s and calls onDone, which fades
       // the collapsed pill + vital section in (State 3).

@@ -10,6 +10,7 @@ import { View, Text } from 'react-native';
 
 import { useRegisterDevice } from '../shared/notifications/hooks/useRegisterDevice';
 import { useNotificationListener } from '../shared/notifications/hooks/useNotificationListener';
+import { useInactivityReset } from './hooks/useInactivityReset';
 import { LoginScreen } from '../features/auth/screens/LoginScreen';
 import { SignUpScreen } from '../features/auth/screens/SignUpScreen';
 import { ForgotPasswordScreen } from '../features/auth/screens/ForgotPasswordScreen';
@@ -61,19 +62,26 @@ const FamilyStack = () => (
  * (useRegisterDevice gates internally on userId; the listener is harmless
  * pre-auth but we only mount this component once authenticated to keep
  * intent obvious).
+ *
+ * Also runs the 24-hour inactivity reset — if the user has been away for
+ * 24+ hours the navigation stack is reset to the role's first screen.
  */
-const NotificationsShell = () => {
+const NotificationsShell = ({ role }: { role: 'elder' | 'family' }) => {
   useRegisterDevice();
   useNotificationListener();
+  useInactivityReset(role);
   return null;
 };
 
 export const RootNavigator = () => {
   const { state } = useAuth();
+  const userRole = state.user?.role === 'elder' ? 'elder' : 'family';
 
   return (
     <NavigationContainer linking={linking}>
-      {state.isAuthenticated ? <NotificationsShell /> : null}
+      {state.isAuthenticated ? (
+        <NotificationsShell role={userRole} />
+      ) : null}
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {!state.isAuthenticated ? (
           <RootStack.Screen name="Auth" component={AuthStack} />
