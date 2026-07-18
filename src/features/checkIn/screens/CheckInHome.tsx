@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  ScrollView,
   TouchableOpacity,
   Pressable,
   Text as RNText,
@@ -12,6 +11,8 @@ import {
   Animated,
   Easing,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { checkInHomeStyles as styles } from './CheckInHome.styles';
 import {
   Volume2,
@@ -45,6 +46,7 @@ import { OutlinedSelect, OutlinedField } from '../../../shared/components';
 import { LogoCard } from '../../../shared/components';
 import { checkInsService } from '../../../services/checkins.service';
 import { vitalsService } from '../../../services/vitals.service';
+import { scanVitalFromCamera } from '../services/vitalScanService';
 import { CheckInSuccessOverlay } from './CheckInSuccessOverlay';
 import {
   CheckIn,
@@ -56,6 +58,7 @@ import {
 
 /** Best-effort error-message extraction for axios responses + Error throws. */
 import { extractApiError } from '../../../shared/utils';
+import { recordActivity } from '../../../services/lifecycle';
 
 const TABLET_BREAKPOINT = 768;
 const FORM_MAX_WIDTH = 480;
@@ -162,6 +165,17 @@ export const CheckInHome = () => {
   const isTablet = width >= TABLET_BREAKPOINT;
   const user = state.user;
 
+  const insets = useSafeAreaInsets();
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  const getBottomOffset = () => {
+    if (isInputFocused) {
+      // Dynamic offset: safe area bottom + space for the "Save Reading" button below the input field (56px minHeight + 8px marginTop + 24px extra padding)
+      return insets.bottom + 88;
+    }
+    return insets.bottom + 24; // Default offset
+  };
+
   const [voiceOn, setVoiceOn] = useState(true);
   const [voiceType, setVoiceType] = useState('warm');
   const [vitalType, setVitalType] = useState<VitalType>('blood_sugar');
@@ -180,6 +194,7 @@ export const CheckInHome = () => {
   const transition = useRef(new Animated.Value(0)).current;
 
   const [savingVital, setSavingVital] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [vitalSavedAt, setVitalSavedAt] = useState<number | null>(null);
   // Remember which input method was used for the most recent save so the
   // success line can show it back to the user (proof that the selection
@@ -362,6 +377,10 @@ export const CheckInHome = () => {
     }
 
     if (successCheckIn) {
+      // A successful check-in is meaningful activity — restart the
+      // 24-hour inactivity timer.
+      recordActivity().catch(() => {});
+
       // Show State 2: checkmark + confetti overlay.
       // The overlay auto-dismisses after 3 s and calls onDone, which fades
       // the collapsed pill + vital section in (State 3).
@@ -407,7 +426,32 @@ export const CheckInHome = () => {
     }
   };
 
+  const handleScan = async () => {
+    setVitalError(undefined);
+    setScanning(true);
+    speak('Opening the camera. Point it at your reading.');
+    try {
+      const result = await scanVitalFromCamera(vitalType);
+      if (result.ok) {
+        setVitalValue(result.value);
+        setInputMethod('camera');
+        speak(`Scanned ${result.value}. Please check it, then save.`);
+      } else if (result.reason === 'permission') {
+        setVitalError('Camera permission is needed. Allow it in Settings, or enter the reading manually.');
+      } else if (result.reason === 'no_reading') {
+        setVitalError("Couldn't read a number — try again with a clearer shot, or enter it manually.");
+      } else if (result.reason === 'error') {
+        setVitalError('Scan failed. Please enter the reading manually.');
+      }
+    } catch {
+      setVitalError('Scan failed. Please enter the reading manually.');
+    } finally {
+      setScanning(false);
+    }
+  };
+
   // Map today's check-in status to the corresponding label + icon below.
+  const isLoadingCheckIn = todayCheckIn === undefined;
   const checkedIn = todayCheckIn != null;
   const checkedInStatus = todayCheckIn?.status;
 
@@ -423,9 +467,11 @@ export const CheckInHome = () => {
   return (
     <>
     <Screen style={{ backgroundColor: colors.background }}>
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={getBottomOffset()}
       >
         {/* ─────────────── Header: logo + Settings pill ──────────────── */}
         <View style={[styles.header, isTablet && styles.constrainTablet]}>
@@ -476,9 +522,9 @@ export const CheckInHome = () => {
               <RNText style={styles.eyebrow}>Daily Check-In</RNText>
               <RNText style={styles.greeting}>Good Morning, {greetingName}</RNText>
               <RNText style={styles.greetingSub}>
-                {checkedIn ? 'Status :' : 'How are you doing today?'}
+                {isLoadingCheckIn ? '' : checkedIn ? 'Status :' : 'How are you doing today?'}
               </RNText>
-              {checkedIn && !successStatus ? (
+              {checkedIn && !successStatus && !isLoadingCheckIn ? (
                 /* State 3: collapsed status pill lives INSIDE the greeting card
                    (design OK_Reading) — voice controls are hidden once checked in.
                    Hidden during the State-2 success overlay to avoid a duplicate. */
@@ -508,7 +554,7 @@ export const CheckInHome = () => {
                     </View>
                   </View>
                 </>
-              ) : !checkedIn ? (
+              ) : !checkedIn && !isLoadingCheckIn ? (
                 <>
                   <Spacer y="md" />
                   <RNText style={styles.voiceReady}>Voice assistant ready</RNText>
@@ -553,13 +599,18 @@ export const CheckInHome = () => {
             <Spacer y="lg" />
 
             {/* ── State 2: full-screen checkmark + confetti overlay ──────── */}
-            {successStatus ? (
+            {isLoadingCheckIn ? (
+              /* Loading: show a subtle spinner while we fetch today's check-in
+                 to avoid flashing the status buttons then immediately replacing them. */
+              <View style={{ alignItems: 'center', paddingVertical: spacing[32] }}>
+                <ActivityIndicator size="large" color={NAVY} />
+              </View>
+            ) : successStatus ? (
               <CheckInSuccessOverlay
                 status={successStatus}
                 name={greetingName}
                 onDone={() => {
                   setSuccessStatus(null);
-                  // State 2 → 3: fade the collapsed pill + vital section in.
                   Animated.timing(transition, {
                     toValue: 1,
                     duration: 500,
@@ -569,11 +620,8 @@ export const CheckInHome = () => {
                 }}
               />
             ) : checkedIn ? (
-              /* State 3: the collapsed status pill now lives inside the greeting
-                 card above; nothing extra here — vital capture follows below. */
               null
             ) : (
-              /* ── State 1: three action buttons ────────────────────────── */
               <View>
                 <StatusActionButton
                   icon={Smile}
@@ -677,6 +725,8 @@ export const CheckInHome = () => {
                       keyboardType="numeric"
                       editable={!savingVital}
                       error={vitalError}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setIsInputFocused(false)}
                     />
                   </View>
                   <View style={{ width: spacing[12] }} />
@@ -684,8 +734,9 @@ export const CheckInHome = () => {
                     title="Scan"
                     icon={Camera}
                     size="md"
-                    disabled={savingVital}
-                    onPress={() => speak('Opening camera to scan reading')}
+                    loading={scanning}
+                    disabled={savingVital || scanning}
+                    onPress={handleScan}
                     style={styles.scanBtn}
                   />
                 </View>
@@ -721,7 +772,7 @@ export const CheckInHome = () => {
             <Spacer y="xxl" />
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
 
     {/* ── Settings Bottom Sheet ──────────────────────────────────────── */}
@@ -828,70 +879,6 @@ export const CheckInHome = () => {
                 </RNText>
                 <RNText style={{ fontSize: 13, fontFamily: interFamilyForWeight(400), color: '#6B7280', marginTop: 2 }}>
                   Connect with your family member
-                </RNText>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Test Push — neumorphic raised card (debug helper) */}
-          <View style={{
-            borderRadius: 16,
-            marginBottom: 14,
-            shadowColor: '#FFFFFF',
-            shadowOffset: { width: -4, height: -4 },
-            shadowOpacity: 0.9,
-            shadowRadius: 8,
-          }}>
-            <TouchableOpacity
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 14,
-                backgroundColor: '#F0F4F8',
-                paddingVertical: 18,
-                paddingHorizontal: 20,
-                borderRadius: 16,
-                shadowColor: '#B0C4D8',
-                shadowOffset: { width: 4, height: 4 },
-                shadowOpacity: 0.45,
-                shadowRadius: 8,
-                elevation: 5,
-              }}
-              activeOpacity={0.85}
-              onPress={async () => {
-                const { devTestPush } = await import(
-                  '../../../shared/notifications/devTestPush'
-                );
-                await devTestPush.selfRemote({
-                  title: 'CareSignal Test',
-                  body: 'Push notification is working!',
-                  channel: 'help',
-                  data: { type: 'help' },
-                });
-                speak('Test push notification sent');
-              }}
-            >
-              <View style={{
-                width: 42,
-                height: 42,
-                borderRadius: 12,
-                backgroundColor: '#E8EFF6',
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#B0C4D8',
-                shadowOffset: { width: 2, height: 2 },
-                shadowOpacity: 0.35,
-                shadowRadius: 4,
-                elevation: 3,
-              }}>
-                <BellRing size={20} color={NAVY} strokeWidth={2.2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <RNText style={{ fontSize: 16, fontFamily: interFamilyForWeight(600), color: NAVY }}>
-                  Test Push
-                </RNText>
-                <RNText style={{ fontSize: 13, fontFamily: interFamilyForWeight(400), color: '#6B7280', marginTop: 2 }}>
-                  Send a test notification to this device
                 </RNText>
               </View>
             </TouchableOpacity>

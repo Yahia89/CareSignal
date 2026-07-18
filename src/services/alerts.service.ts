@@ -30,7 +30,8 @@ export const alertsService = {
   /** PATCH /alerts/{id} — mark dismissed. Returns the updated Alert. */
   dismiss: async (id: string): Promise<ApiAlert> => {
     const response = await apiClient.patch<ApiEnvelope<ApiAlert>>(
-      `/alerts/${encodeURIComponent(id)}`
+      `/alerts/${encodeURIComponent(id)}`,
+      { dismissed_at: new Date().toISOString() },
     );
     return unwrap(response.data);
   },

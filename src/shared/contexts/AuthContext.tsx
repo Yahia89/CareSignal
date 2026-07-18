@@ -5,6 +5,7 @@ import { authService } from '../../services/auth.service';
 import { storage } from '../../utils/storage';
 import { setAuthToken, setLogoutCallback } from '../../services/api';
 import { setupTokenRefreshTimer, clearTokenRefreshTimer } from '../../utils/tokenManager';
+import { clearActivity as clearLifecycleActivity } from '../../services/lifecycle';
 
 /** Result wrapper used by login/signup so screens can render errors locally
  *  without subscribing to global state. */
@@ -342,6 +343,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       tokenRefreshTimerRef.current = null;
 
       await storage.clear();
+      await clearLifecycleActivity();
       dispatch({ type: 'LOGOUT' });
     }
   }, []);
