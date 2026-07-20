@@ -56,7 +56,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>CareSignal can read a blood sugar or blood pressure reading from a photo.</string>
 	<key>RCTNewArchEnabled</key>
-	<false/>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>SplashScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>

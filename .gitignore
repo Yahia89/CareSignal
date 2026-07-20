@@ -73,8 +73,9 @@ node_modules/
 .agents
 .claude
 CLAUDE.md
-skills/
-**/skills/
-skills-lock.json
+
 
 .DS_Store
+.expo
+.expo/*
+.expo/

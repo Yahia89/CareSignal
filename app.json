@@ -10,12 +10,6 @@
       "**/*"
     ],
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#EEF1F5"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.medtechcare.caresignal.app",
@@ -37,7 +31,6 @@
         "monochromeImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#EEF1F5"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.medtechcare.caresignal",
       "googleServicesFile": "./google-services.json"
@@ -47,6 +40,14 @@
     },
     "plugins": [
       "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#EEF1F5"
+        }
+      ],
       "@sentry/react-native",
       [
         "expo-notifications",
@@ -68,18 +69,12 @@
         "expo-build-properties",
         {
           "ios": {
-            "deploymentTarget": "16.0"
+            "deploymentTarget": "16.4"
           }
         }
       ],
       "./plugins/withFmtFix"
     ],
-    "notification": {
-      "icon": "./assets/icon.png",
-      "color": "#1E3A5F",
-      "androidMode": "default",
-      "androidCollapsedTitle": "CareSignal"
-    },
     "extra": {
       "eas": {
         "projectId": "86ec6115-70c1-44a3-bba0-0a5bc64f8783"

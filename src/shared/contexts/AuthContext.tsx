@@ -86,7 +86,7 @@ const AuthContext = createContext<{
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
-  const tokenRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const tokenRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize auth from stored token
   useEffect(() => {
