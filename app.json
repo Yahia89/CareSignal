@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.medtechcare.caresignal.app",
-      "appleTeamId": "AMV49KTJ3X",
+      "appleTeamId": "7235VJ3S8H",
       "icon": {
         "dark": "./assets/Icon-iOS-Dark.png",
         "light": "./assets/icon.png",

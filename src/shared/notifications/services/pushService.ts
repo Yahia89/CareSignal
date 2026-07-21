@@ -22,12 +22,13 @@ try {
 
 /**
  * How notifications behave when received while the app is in the foreground.
- * The legacy `shouldShowAlert` is kept for older SDKs; `shouldShowBanner` +
- * `shouldShowList` are the SDK 49+ replacements.
+ *
+ * All flags are enabled so the OS always presents the notification reliably.
+ * Our custom `InAppNotificationToast` also fires via
+ * `addNotificationReceivedListener` for a richer in-app experience.
  */
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,
@@ -54,21 +55,18 @@ async function ensureAndroidChannels() {
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#1E3A5F',
-    sound: 'default',
   });
   await Notifications.setNotificationChannelAsync('help', {
     name: 'Senior needs help',
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 400, 250, 400],
     lightColor: '#E0A93E',
-    sound: 'default',
   });
   await Notifications.setNotificationChannelAsync('urgent', {
     name: 'Urgent alert',
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 600, 200, 600, 200, 600],
     lightColor: '#C0392B',
-    sound: 'default',
     bypassDnd: true,
   });
 }

@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useOnNotificationReceived } from '../../../shared/notifications/notificationEventBus';
 import { extractApiError } from '../../../shared/utils';
 import {
   View,
@@ -8,9 +9,11 @@ import {
   Text as RNText,
   RefreshControl,
   Image,
+  AppState,
+  Alert,
 } from 'react-native';
 import { AxiosError } from 'axios';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import {
   Settings as SettingsIcon,
   LogOut,
@@ -191,9 +194,49 @@ export const FamilyDashboardScreen = () => {
 
   useEffect(() => { fetchAll('initial'); }, [fetchAll]);
 
-  const handleLogout = async () => {
-    await logout();
-    dispatch({ type: 'LOGOUT' });
+  // Auto-refresh when a push notification arrives in the foreground
+  useOnNotificationReceived(() => {
+    fetchAll('refresh');
+  });
+
+  // ── Polling: silently refresh every 30 seconds while the screen is focused ──
+  const isFocused = useIsFocused();
+  useEffect(() => {
+    if (!isFocused) return;
+    const id = setInterval(() => {
+      fetchAll('refresh');
+    }, 30_000);
+    return () => clearInterval(id);
+  }, [isFocused, fetchAll]);
+
+  // ── AppState: refresh when the app returns to the foreground ───────────────
+  const appStateRef = useRef(AppState.currentState);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (appStateRef.current.match(/inactive|background/) && nextState === 'active') {
+        fetchAll('refresh');
+      }
+      appStateRef.current = nextState;
+    });
+    return () => sub.remove();
+  }, [fetchAll]);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            dispatch({ type: 'LOGOUT' });
+          },
+        },
+      ],
+    );
   };
 
   const seniorName = status

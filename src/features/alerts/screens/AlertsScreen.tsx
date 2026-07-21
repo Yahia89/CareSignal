@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { extractApiError } from '../../../shared/utils';
+import { useOnNotificationReceived } from '../../../shared/notifications/notificationEventBus';
 import { View, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { alertsStyles as styles } from './AlertsScreen.styles';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { Bell, Check, AlertTriangle } from 'lucide-react-native';
 import { Screen, Text, Spacer, SkeletonBlock, SkeletonGroup } from '../../../shared/components';
 import { NeuButton, NeuCard, useColors, spacing, borderRadius } from '../../../shared/design';
@@ -120,6 +121,21 @@ export const AlertsScreen = () => {
   useEffect(() => {
     if (isPlusOrPro) fetchPage(1, 'initial');
   }, [isPlusOrPro, fetchPage]);
+
+  // Auto-refresh when a push notification arrives in the foreground
+  useOnNotificationReceived(() => {
+    if (isPlusOrPro) fetchPage(1, 'refresh');
+  });
+
+  // ── Polling: silently refresh every 30 seconds while the screen is focused ──
+  const isFocused = useIsFocused();
+  useEffect(() => {
+    if (!isFocused || !isPlusOrPro) return;
+    const id = setInterval(() => {
+      fetchPage(1, 'refresh');
+    }, 30_000);
+    return () => clearInterval(id);
+  }, [isFocused, isPlusOrPro, fetchPage]);
 
   const handleDismiss = async (id: string) => {
     setDismissingId(id);

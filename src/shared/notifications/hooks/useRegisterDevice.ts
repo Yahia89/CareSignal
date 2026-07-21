@@ -1,11 +1,8 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pushService } from '../services/pushService';
 import { useAuth } from '../../contexts/AuthContext';
 import apiClient from '../../../services/api';
-
-const LAST_REGISTERED_KEY = '@caresignal_last_registered_push_token';
 
 /**
  * After login, get the Expo push token and tell the backend about it.
@@ -32,13 +29,6 @@ export function useRegisterDevice() {
       }
       console.log('[push] ExpoPushToken =', token, 'userId =', userId);
 
-      const cacheKey = `${LAST_REGISTERED_KEY}_${userId}`;
-      const last = await AsyncStorage.getItem(cacheKey);
-      if (last === token) {
-        console.log('[push] token unchanged since last registration — skipping POST');
-        return;
-      }
-
       try {
         // Don't send userId — the backend derives the user from the auth
         // token, and its /devices/register schema is strict() so an extra
@@ -49,7 +39,6 @@ export function useRegisterDevice() {
           appVersion: '1.0.0',
         });
         console.log('[push] /devices/register ←', res.status, res.data);
-        await AsyncStorage.setItem(cacheKey, token);
       } catch (err: any) {
         console.warn('[push] /devices/register ✗', {
           status: err?.response?.status,

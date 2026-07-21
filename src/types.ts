@@ -208,7 +208,7 @@ export interface AlertSettings {
 export const DEFAULT_ALERT_SETTINGS: AlertSettings = {
   vital_capture_enabled: false,
   needs_help_email: true,
-  needs_help_text: false,
+  needs_help_text: true,
   needs_help_phone: false,
   urgent_help_email: true,
   urgent_help_text: true,

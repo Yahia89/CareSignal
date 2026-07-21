@@ -247,6 +247,18 @@
       "skillPath": "skills/react-navigation/SKILL.md",
       "computedHash": "dbafa956e8e1af4a180608f7bc88eca96b6cf829a9c18f8ca9cad6a7e0b8fcd3"
     },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "17a437f3de2371ec43ad8a17d3e858337695efb46ed4af5dd6426f330bb6d032"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "ec56a54fba0e97bee52c7f244ba603bb284bf8d1b739c66a5cc84ec3df709d9d"
+    },
     "swift": {
       "source": "margelo/react-native-skills",
       "sourceType": "github",

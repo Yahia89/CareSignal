@@ -14,6 +14,7 @@ import { Providers } from './src/app/Providers';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ErrorBoundary } from './src/shared/components/ErrorBoundary';
 import { OfflineBanner } from './src/shared/components';
+import { InAppNotificationToast } from './src/shared/components/InAppNotificationToast';
 import { View } from 'react-native';
 
 // Keep the native splash visible until our JS is ready (fonts loaded).
@@ -53,6 +54,7 @@ export default function App() {
           </View>
         </View>
         <StatusBar style="auto" />
+        <InAppNotificationToast />
       </Providers>
     </ErrorBoundary>
   );
