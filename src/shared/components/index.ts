@@ -20,3 +20,4 @@ export type { OutlinedSelectProps, OutlinedSelectOption } from './OutlinedSelect
 export { GlossBackground } from './GlossBackground';
 export { SkeletonBlock, SkeletonGroup, shimmerDefaults } from './Shimmer';
 export type { SkeletonBlockProps } from './Shimmer';
+export { InAppNotificationToast } from './InAppNotificationToast';

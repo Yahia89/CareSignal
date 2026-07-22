@@ -93,7 +93,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
  * Call this when token is set (after login/signup)
  * Proactively refreshes when token is near expiry (within 5 minutes)
  */
-export const setupTokenRefreshTimer = (token: string | null | undefined): NodeJS.Timeout | null => {
+export const setupTokenRefreshTimer = (token: string | null | undefined): ReturnType<typeof setTimeout> | null => {
   if (!token) {
     console.warn('setupTokenRefreshTimer called without a token; skipping');
     return null;
@@ -128,7 +128,7 @@ export const setupTokenRefreshTimer = (token: string | null | undefined): NodeJS
 /**
  * Clear token refresh timer
  */
-export const clearTokenRefreshTimer = (timerId: NodeJS.Timeout | null) => {
+export const clearTokenRefreshTimer = (timerId: ReturnType<typeof setTimeout> | null) => {
   if (timerId) {
     clearTimeout(timerId);
   }

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
+import { notificationEventBus } from '../notificationEventBus';
 
 type PushData = {
   type?: string;
@@ -38,6 +39,9 @@ export function useNotificationListener() {
         body: notification.request.content.body,
         data: notification.request.content.data,
       });
+
+      // Broadcast to subscribed screens so they can auto-refresh
+      notificationEventBus.emit(notification);
     });
 
     responseSub.current = Notifications.addNotificationResponseReceivedListener((response) => {

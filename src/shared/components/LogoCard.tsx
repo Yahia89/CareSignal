@@ -4,8 +4,7 @@ import { View, StyleSheet, Image, Text } from 'react-native';
 // EncodingType.Base64 that's known-good across SDK versions. The new
 // SDK 54 File.write(Uint8Array) was producing files Glide rejected
 // with "Problem decoding into existing bitmap".
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const LegacyFS: typeof import('expo-file-system/build/legacy/FileSystem') = require('expo-file-system/legacy');
+import * as FileSystem from 'expo-file-system/legacy';
 import { HeartPulse, Wifi } from 'lucide-react-native';
 import { colors, spacing, borderRadius } from '../design';
 import { interFamilyForWeight } from '../design/tokens/utils';
@@ -40,18 +39,18 @@ function useLogoFileUri(): { uri: string | null; failed: boolean } {
     let cancelled = false;
     (async () => {
       try {
-        const cacheDir = LegacyFS.cacheDirectory;
+        const cacheDir = FileSystem.cacheDirectory;
         if (!cacheDir) throw new Error('No cache directory available');
         const path = cacheDir + LOGO_FILE_NAME;
 
         // Best-effort: drop any stale logos from previous sessions so the
         // cache dir doesn't grow unbounded. Failures here are non-fatal.
         try {
-          const entries = await LegacyFS.readDirectoryAsync(cacheDir);
+          const entries = await FileSystem.readDirectoryAsync(cacheDir);
           await Promise.all(
             entries
-              .filter((e) => e.startsWith('caresignal-logo-') && e !== LOGO_FILE_NAME)
-              .map((e) => LegacyFS.deleteAsync(cacheDir + e, { idempotent: true }))
+              .filter((e: string) => e.startsWith('caresignal-logo-') && e !== LOGO_FILE_NAME)
+              .map((e: string) => FileSystem.deleteAsync(cacheDir + e, { idempotent: true }))
           );
         } catch {
           // ignore
@@ -64,12 +63,12 @@ function useLogoFileUri(): { uri: string | null; failed: boolean } {
 
         // Always rewrite — covers the case where a previous attempt left
         // a bad/partial file at the same path.
-        await LegacyFS.writeAsStringAsync(path, b64, {
+        await FileSystem.writeAsStringAsync(path, b64, {
           encoding: 'base64' as any,
         });
 
         // Sanity-check that the bytes actually landed (8927 = original PNG)
-        const info = await LegacyFS.getInfoAsync(path);
+        const info = await FileSystem.getInfoAsync(path);
         // eslint-disable-next-line no-console
         console.log(
           `LogoCard: wrote ${info.exists ? (info as any).size : '?'} bytes to ${path}`

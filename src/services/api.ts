@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { storage } from '../utils/storage';
 
-const API_BASE_URL = 'https://carsignal-api.vercel.app/api';
+const API_BASE_URL = 'https://carsignal-api-prod.vercel.app/api';
 
 let authToken: string | null = null;
 

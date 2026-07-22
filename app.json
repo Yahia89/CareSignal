@@ -9,23 +9,28 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "userInterfaceStyle": "light",
-    "newArchEnabled": false,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#EEF1F5"
-    },
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.medtechcare.caresignal"
+      "bundleIdentifier": "com.medtechcare.caresignal.app",
+      "appleTeamId": "7235VJ3S8H",
+      "icon": {
+        "dark": "./assets/Icon-iOS-Dark.png",
+        "light": "./assets/icon.png",
+        "tinted": "./assets/icon.png"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "CareSignal uses the camera to scan a blood sugar or blood pressure reading from your meter.",
+        "NSPhotoLibraryUsageDescription": "CareSignal can read a blood sugar or blood pressure reading from a photo."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#EEF1F5"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.medtechcare.caresignal",
       "googleServicesFile": "./google-services.json"
@@ -35,7 +40,14 @@
     },
     "plugins": [
       "expo-secure-store",
-      "@sentry/react-native",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#EEF1F5"
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -44,14 +56,24 @@
           "defaultChannel": "default",
           "sounds": []
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "CareSignal uses the camera to scan a blood sugar or blood pressure reading from your meter.",
+          "photosPermission": "CareSignal can read a blood sugar or blood pressure reading from a photo."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ],
+      "./plugins/withFmtFix"
     ],
-    "notification": {
-      "icon": "./assets/icon.png",
-      "color": "#1E3A5F",
-      "androidMode": "default",
-      "androidCollapsedTitle": "CareSignal"
-    },
     "extra": {
       "eas": {
         "projectId": "86ec6115-70c1-44a3-bba0-0a5bc64f8783"
