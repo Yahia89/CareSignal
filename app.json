@@ -48,7 +48,6 @@
           "backgroundColor": "#EEF1F5"
         }
       ],
-      "@sentry/react-native",
       [
         "expo-notifications",
         {

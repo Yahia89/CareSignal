@@ -6,16 +6,12 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "env": { "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
+      "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "env": { "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
+      "distribution": "internal"
     },
-    "production": {
-      "env": { "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
-    }
+    "production": {}
   },
   "submit": {
     "production": {}
